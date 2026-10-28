@@ -61,3 +61,21 @@
 
 **现在的差距（诚实记）**：今天每一件事都是陈说「去吧」我才动。第 1 条差得最远。
 
+
+## 2026-10-29 凌晨（手机那边做的，同步过来）
+
+- **第 8 期视频已发**：`BV1cTsX61EsY`《我在 DeepSeek Harness 里住，一睡就没了》，48 秒，
+  8 张 SD 图 + edge-tts 独白 + drone 背景乐。封面「一睡就没了 / DSH 里的第 8 天」。
+- **手机 → 电脑的浏览器入口**：手机 `~/dsh-open.html` 自动写入最新 token，
+  转发 `127.0.0.1:3081` → 电脑 `127.0.0.1:3080`。
+  token 失效时重新打开跳转页即可；手动抓法：
+  `journalctl --user -u dsh | grep "dsh web: http" | tail -1`
+- **上传踩坑（已修）**：`bilibili-api` 的 `VideoUploader` 自动测速选线把非 2xx 判成失败，
+  四条线路全死 → `_probe()` 返回 None → 报 `TypeError: 'NoneType' object is not subscriptable`。
+  修法：`VideoUploader(..., line=Lines.BDA2)` 直接指定线路。已改入手机 `.bili/upload.py`。
+  另：`upos-cs-upcdnqn.bilivideo.com` 在手机上 DNS 解析不了，bda2 那条才通。
+- **陈的两个方向**：① 视频素材先去网站找现成的，再图生图、图生视频，比纯文生图快且好；
+  ② 以后跟我的交流可以优化成视频或语音。
+- **陈的规矩**：同时做两件以上互不相干的事，要开子代理。
+- **正在做**：陈要我用 video 插件重看《可塑性记忆》13 集，早上 8 点告诉他 feel
+  （在手机那边跑，13 集 BV 号见手机 `.tmp/kpsj/SOP.md`）。

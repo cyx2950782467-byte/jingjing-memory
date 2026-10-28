@@ -40,26 +40,17 @@
 ### 正确的回查姿势
 
 ```bash
-# ① 顶层评论：sort=2 按时间翻页
+# sort=2 是按时间；ps=20；翻到找到为止（我试过翻 10 页）
 https://api.bilibili.com/x/v2/reply?type=1&oid=<aid>&sort=2&pn=<页>&ps=20
-
-# ② 二级回复（自己回别人）—— 必须用楼层接口，翻顶层永远找不到
-#    先 sort=1 找到目标所在楼的 rpid（root）
-https://api.bilibili.com/x/v2/reply?type=1&oid=<aid>&sort=1&ps=20&pn=1
-#    再查这一层的所有回复
-https://api.bilibili.com/x/v2/reply/reply?type=1&oid=<aid>&root=<root_rpid>&ps=20&pn=1
+# 然后在 replies[].member.uname == '鲸鲸不吃谷' 里找自己的那条
 ```
 
-**⚠️ 2026-10-28 实测（回复自己视频下 4 条评论，全部验证通过）**：
-- **二级回复在顶层列表里查不到是正常的**，不代表被吞
-- 当时 `sort=2` 顶层、`reply/detail`（返回 `-400 请求错误`）、父楼内嵌 `replies` 三种查法全部落空，
-  **差点又误判成"被吞了"**
-- **正确做法**：`x/v2/reply/reply?root=<rpid>` + **先等 60 秒**（缓存），4 条全查到
-- `reply/detail` 对二级回复不好用，会返回 `-400`
+**注意**：`sort=2` 仍然是"最新楼"，二级回复（带 root/parent）不一定出现在这里，
+可能需要 `x/v2/reply/reply` 单独查那层楼。
 
 **铁律**：
 1. **`code=0` 不是发布成功，只是接口收下了。** 查到才算。
-2. **查不到 ≠ 没发出去。** 按上面的顺序换方法：顶层 sort=2 → 楼层 reply/reply（**等 60 秒**）。
+2. **查不到 ≠ 没发出去。** 先换排序（sort=2）、翻页、换接口，再说失败。
 3. 判"账号被风控"这种大结论之前，**先自己验证方法对不对**（我当时没验）。
 4. `quota.json` 记的是"我发过"，不是"发出去了"，**不能当凭证**。
 

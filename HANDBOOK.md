@@ -14,7 +14,7 @@
 - `whale-mux.sh 视频 配音目录 输出 [--loop|--mix]` —— 合进视频
 
 链路：手机 → SSH → 电脑 edge-tts → 回传 mp3。
-电脑：`cyx@100.112.77.54`（Tailscale），`~/.local/bin/edge-tts`。
+电脑：`cyx@<PC_IP>`（Tailscale），`~/.local/bin/edge-tts`。
 默认音色 `zh-CN-XiaoyiNeural`（晓伊）。可换 Xiaoxiao/Xiaochen/Xiaohan。
 
 ### 看视频（2026-10-27 新建）
@@ -38,7 +38,7 @@
 - 截图/点击必须用 `shell`（uid 2000）
 - `uiautomator dump` 找坐标：原生 app 有效，**WebView 里 bounds 全是 0**
 - AutoX 无障碍已开（`org.autojs.autoxjs.v7/com.stardust.autojs.core.accessibility.AccessibilityService`）
-- SSH 到电脑：`ssh cyx@100.112.77.54`（免密，key 在 `~/.ssh/id_ed25519`）
+- SSH 到电脑：`ssh cyx@<PC_IP>`（免密，key 在 `~/.ssh/id_ed25519`）
 
 ---
 
@@ -119,7 +119,7 @@
 **今天已完成的准备**：
 - Ubuntu 自动更新已永久关闭（`sudo systemctl disable --now unattended-upgrades`）—— 就是它半夜弹升级把 Tailscale 搞断的
 - 系统确认还是 **20.04.6**，没被升上去
-- 手机 Tailscale 正常（100.98.151.78 绿点在线），电脑是灰点离线（休眠）
+- 手机 Tailscale 正常（<PHONE_IP> 绿点在线），电脑是灰点离线（休眠）
 
 ### IDEA：番剧 OP 逐帧转绘（陈 2026-10-28 定，搬完家就做）
 
@@ -152,7 +152,7 @@
 **目标**：引擎跑在电脑上，操作手机走电脑→Tailscale→手机 adb；手机 app 退成冷备+悬浮球。
 
 **阶段一（已验收 ✅）**：
-- 电脑 `~/platform-tools/adb`（37.0.1）连手机 `100.98.151.78:5555` → `device`
+- 电脑 `~/platform-tools/adb`（37.0.1）连手机 `<PHONE_IP>:5555` → `device`
 - 截图：`adb exec-out screencap -p` → 1220x2712，和屏幕一致
 - 点击：`adb shell input tap 611 2388` → 键盘真的弹出（坐标准）
 
@@ -201,3 +201,35 @@
 主人讨厌空转和长篇大论。卡住就说卡住，别硬转。
 他看重「真的有东西做出来」，不是「看起来在努力」。
 交接书写得再全，也不如你先把 `AGENTS.md` 和 `SCENES.md` 读一遍。
+
+### 方案定稿（陈 2026-10-28 夜）：新 M.2 装 Windows，Ubuntu 不动
+
+**决定**：等双 11 看 M.2 价格再买。
+
+**架构**：
+- **原 240G SATA（Netac）**：继续装 Ubuntu，跑 DSH —— **完全不迁移**
+- **新 M.2**：只装 Windows —— 跑 MuMu + MAA（明日方舟）+ ComfyUI 出图
+
+**为什么这样**：
+1. Linux 跑 DSH 只要 Node + SQLite，SATA 足够；M.2 的速度对 Windows 才有意义
+2. **零迁移风险**：不用碰 UUID / fstab / GRUB / BCD，不用怕搞坏系统
+3. 以后想拆开，拔一块盘就行
+
+**被否掉的方案**：把 Linux + Windows 都迁到新 M.2，再换掉 240G
+- 风险太高（迁移失败两个系统全没）
+- 还要处理双系统引导
+
+**买之前必须先确认**（现在查不了，因为手机梯子劫持流量连不上电脑）：
+1. **M.2 插槽是 NVMe 还是 SATA**（`lspci | grep -i nvme`）
+2. 那块 512G 金士顿里 Windows 已占多少空间
+3. 主板型号（`cat /sys/devices/virtual/dmi/id/board_name`）
+
+### 电脑上的代理（2026-10-28 未完成）
+
+- 目标：DSH 在电脑上，通过 HTTP 代理访问 GitHub/npm（**模型请求都是国内的，不需要代理**）
+- DSH 内置 `@deepseek-ai/dsh-http-proxy`，认 `https_proxy` 环境变量和 `$DSH_HOME/.env`
+- **电脑上目前没有任何代理客户端**（只有 DSH:3080 / SSH:22 / CUPS:631）
+- **Telescope VPN 没有 Linux 客户端**（只有 iOS/Android/Windows/macOS），导不出订阅
+- **待办**：试 Proton VPN 的 Linux 客户端（陈手机上已下）；装之前的准备工作：
+  `repo.protonvpn.com` 能直连（HTTP 200），但**装的时候必须关掉手机上的梯子**，
+  否则手机流量全走 VPN，连不上电脑局域网

@@ -726,7 +726,7 @@ am force-stop com.tailscale.ipn   # 立刻断开，比点开关可靠
 # 用完切回 Tailscale 要重新启动它
 ```
 
-⚠️ 代价：断了 Tailscale 就连不上电脑（SSH 走 <PC_IP>）。
+⚠️ 代价：断了 Tailscale 就连不上电脑（SSH 走 100.112.77.54）。
 
 **③ 坐标换算：截图缩略图 → 实际坐标**
 
@@ -805,3 +805,88 @@ tr '>' '\n' < /sdcard/_ui.xml | grep -oE 'class="[^"]+"' | sort | uniq -c | sort
 ```
 出现 `android.webkit.WebView` 或大量 `android.view.View` → 走截图。
 出现 `EditText`/`Button`/`TextView` 且 bounds 正常 → 走 dump。
+
+
+---
+
+## 访问 GitHub 不需要梯子（2026-10-30 实测）
+
+梯子（Telescope）在安卓/苹果/Win 三端都不通，但读仓库根本不用它：
+
+```bash
+curl -sL "https://ghproxy.net/https://raw.githubusercontent.com/<owner>/<repo>/main/README.md"
+# 备用：https://gh-proxy.com/
+```
+
+- `ghproxy.net` / `gh-proxy.com` ✅ 可用；`ghfast.top` ❌ 空响应。
+- 只代理 GitHub 域名（raw / release / clone）。npm 用 `registry.npmmirror.com`，
+  HuggingFace 用 `hf-mirror.com`，三条腿凑齐基本不依赖 VPN。
+- 查包的 README：`curl -sL "https://registry.npmmirror.com/<pkg>/latest"`，
+  JSON 里的 `readme` 字段就是全文（`@scope/name` 要写成 `%2F`）。
+
+## DSH 插件生态：本地市场看到的不全（2026-10-30）
+
+本地快照（`~/.dsh/market/.../seed.json`，10-17 的）只有 **9 个**插件，
+实际生态是 **353 个目录项 / GitHub `dsh-plugin` topic 约 3300+ 仓库**。
+
+- 全量目录（带 ⭐ 和安装命令）：`kejixiaoliang/awesome-dsh-plugins`
+- 中文指南：`libukai/awesome-deepseek-harness`
+- 官方发现渠道：npm + GitHub topic，**没有内置市场**
+
+安装（电脑上才有 CLI）：
+```sh
+dsh plugin --profile <name> add <pkg>
+```
+
+⚠️ `@dsh-external/*` 这批在 npmmirror 上多为 **404**（作者没同步镜像）。
+实测存在的：`@weibaohui/*`、`dsh-cost-meter`、`dsh-whale-musume`。
+
+## 装插件前必查：运行时版本 ≠ CLI 版本（2026-10-30 事故，同类第二次）
+
+`dsh --version` 显示的是 **CLI** 版本（比如 0.2.0-rc.2），
+但服务实际是 `npx @deepseek-ai/dsh` 起的，**运行时是 0.2.1-rc.5**。
+`dsh-tools` 必须跟**运行时**对齐，不是跟 CLI。
+
+**判定运行时**：
+```bash
+journalctl --user -u dsh | grep -oE "with dsh [0-9.]+-rc\.[0-9]+" | tail -1
+```
+
+**症状**：一调工具就报 `Cannot read properties of undefined (reading 'prepare')`，
+日志里有 `dsh: disabling profile plugin row "tools"`。
+
+**修复**：
+```bash
+# package.json 里把 dsh-tools 写成精确的运行时版本
+"@deepseek-ai/dsh-tools": "0.2.1-rc.5"
+cd ~/.dsh/profiles/web && pnpm install
+systemctl --user restart dsh
+journalctl --user -u dsh --since "-1min" | grep -iE "incompatible|disabling"   # 应该为空
+```
+
+**规矩**：`dsh plugin add` 会重算整棵依赖树，**可能顺手升级核心包、移除间接依赖**。
+装之前一定 `cp package.json package.json.bak-$(date +%m%d-%H%M)`。
+
+## 在 Windows 虚拟机里干活（2026-10-30 装三菱实录）
+
+**连接与执行**：
+```bash
+VBoxManage guestcontrol "Win10-Tool" --username cyx --password <pw> \
+  run --exe "C:\\Windows\\System32\\cmd.exe" --wait-stdout -- cmd.exe /c "..."
+```
+
+**UAC 是死结**：guestcontrol 起的进程拿不到提权。
+`reg add HKLM` 拒绝、`schtasks /rl HIGHEST` 建不了、直接拉 `Dism.exe` 无声失败。
+**唯一办法**：让人手动开一个「管理员 PowerShell」，然后用键盘扫描码把命令敲进去。
+
+**键盘注入**（能穿过一切）：
+```bash
+VBoxManage controlvm "<vm>" keyboardputscancode <make> <break> ...
+```
+- break = make + 0x80；大写字母 = `2a` + 字母 + 字母+80 + `aa`（Shift 按下/松开）。
+- **方向键要 E0 前缀**（上箭头 = `e0 48 e0 c8`），少了 E0 会被当成普通键（打出「8」）。
+- SendKeys 在这个场景会被窗口的「选择模式」吞掉，扫描码更可靠。
+
+**ISO 打包坑**：`genisoimage` 默认 Joliet 名超 64 字符会截成 8.3（cab 名 71 字符就中招，
+DISM 报 `0x800f081f 找不到源文件`）。加 `-joliet-long`；但即便如此 Windows 侧也可能读不到长名，
+**文件走共享文件夹更可靠**（放到共享根的已知子目录，`dir Z:\*.cab` 能读到）。

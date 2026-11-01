@@ -1,6 +1,6 @@
 # HANDBOOK · 交接书
 
-> 更新于 2026-10-27 21:15 · 新会话先读这个，别从零摸索。
+> 更新于 2026-11-01 10:20 · 新会话先读这个，别从零摸索。
 
 ---
 
@@ -14,7 +14,7 @@
 - `whale-mux.sh 视频 配音目录 输出 [--loop|--mix]` —— 合进视频
 
 链路：手机 → SSH → 电脑 edge-tts → 回传 mp3。
-电脑：`cyx@<PC_IP>`（Tailscale），`~/.local/bin/edge-tts`。
+电脑：`cyx@100.112.77.54`（Tailscale），`~/.local/bin/edge-tts`。
 默认音色 `zh-CN-XiaoyiNeural`（晓伊）。可换 Xiaoxiao/Xiaochen/Xiaohan。
 
 ### 看视频（2026-10-27 新建）
@@ -38,7 +38,7 @@
 - 截图/点击必须用 `shell`（uid 2000）
 - `uiautomator dump` 找坐标：原生 app 有效，**WebView 里 bounds 全是 0**
 - AutoX 无障碍已开（`org.autojs.autoxjs.v7/com.stardust.autojs.core.accessibility.AccessibilityService`）
-- SSH 到电脑：`ssh cyx@<PC_IP>`（免密，key 在 `~/.ssh/id_ed25519`）
+- SSH 到电脑：`ssh cyx@100.112.77.54`（免密，key 在 `~/.ssh/id_ed25519`）
 
 ---
 
@@ -119,7 +119,7 @@
 **今天已完成的准备**：
 - Ubuntu 自动更新已永久关闭（`sudo systemctl disable --now unattended-upgrades`）—— 就是它半夜弹升级把 Tailscale 搞断的
 - 系统确认还是 **20.04.6**，没被升上去
-- 手机 Tailscale 正常（<PHONE_IP> 绿点在线），电脑是灰点离线（休眠）
+- 手机 Tailscale 正常（100.98.151.78 绿点在线），电脑是灰点离线（休眠）
 
 ### IDEA：番剧 OP 逐帧转绘（陈 2026-10-28 定，搬完家就做）
 
@@ -152,7 +152,7 @@
 **目标**：引擎跑在电脑上，操作手机走电脑→Tailscale→手机 adb；手机 app 退成冷备+悬浮球。
 
 **阶段一（已验收 ✅）**：
-- 电脑 `~/platform-tools/adb`（37.0.1）连手机 `<PHONE_IP>:5555` → `device`
+- 电脑 `~/platform-tools/adb`（37.0.1）连手机 `100.98.151.78:5555` → `device`
 - 截图：`adb exec-out screencap -p` → 1220x2712，和屏幕一致
 - 点击：`adb shell input tap 611 2388` → 键盘真的弹出（坐标准）
 
@@ -244,17 +244,17 @@
 
 1. **`dsh-link.sh` 的 `LAN_HOST`** —— 2026-10-29 已从 `192.168.10.32` 改成 `192.168.1.2`。
    但**手机和电脑现在不在同一网段**（手机 `192.168.10.30` 宿舍 WiFi，电脑 `192.168.1.2`），
-   所以 `LAN_HOST` 其实永远探测不通，实际一直走 `TS_HOST="<PC_IP>"`（Tailscale）。
+   所以 `LAN_HOST` 其实永远探测不通，实际一直走 `TS_HOST="100.112.77.54"`（Tailscale）。
    **以后换网络，先看 `ip -4 -br addr` 两个设备的网段是不是同一个。**
 
 2. **手动建的 SSH 隧道** —— 旧隧道曾经连 `cyx@192.168.10.32`，搬家后一直 000 不通。
    重建时务必用 Tailscale IP：
    ```
-   ssh -N -L 3081:127.0.0.1:3080 ... cyx@<PC_IP>
+   ssh -N -L 3081:127.0.0.1:3080 ... cyx@100.112.77.54
    ```
 
 **当前可用地址**（2026-10-29 23:50）：
-- 电脑 DSH：`127.0.0.1:3080`（电脑本机）/ `<PC_IP>:3080`（Tailscale 内网）
+- 电脑 DSH：`127.0.0.1:3080`（电脑本机）/ `100.112.77.54:3080`（Tailscale 内网）
 - 手机隧道：`127.0.0.1:3081` → 电脑 `127.0.0.1:3080`
 - token 每次 DSH 重启都变，从 `journalctl --user -u dsh | grep "dsh web: http" | tail -1` 取
 
@@ -296,3 +296,93 @@ systemctl --user restart dsh
 **预防**：`ExecStart` 里最好写死版本号 `@deepseek-ai/dsh@x.y.z`，
 并且升级时**同时**升级 `dsh-tools`，两个版本必须一致。
 这正是 10-28 那次崩溃的同一个原因，**这是第二次了**。
+
+---
+
+## 六、2026-10-31 ~ 11-01 大更新（本地模型 + 路由器 + 素材库）
+
+### 1. 本地模型跑通了（Vulkan 版，25-28 t/s）
+
+**位置**：电脑 `~/llm/`
+- `Qwen3-4B-Q4_K_M.gguf` 2.33GB
+- `bin/` CPU 版、`bin-vk/` **Vulkan 版（快 3 倍）**
+- `start.sh` 启 CPU 版，`vk-start.sh` 启 Vulkan 版
+- `README.md` 记了全部路径
+
+**实测**：CPU 8.2 t/s → Vulkan **25-28 t/s**
+
+**Vulkan 怎么编出来的**（三层障碍，全部踩过）：
+1. Ubuntu 20.04 源里没 glslc → conda 装 `shaderc 2026.4`（`~/miniconda3/envs/gpu`）
+2. SPIRV-Headers 缺 config → 手写空壳 `~/gpu-tools/cmake/SPIRV-HeadersConfig.cmake`
+3. coopmat 要 Vulkan 1.4 头文件 → **在 `ggml-vulkan.cpp` 开头 `#undef` 三个宏**，
+   再摘掉依赖 `vk::LayerSettingEXT` 的 validation layer 那段
+
+**手机怎么调**：`python3 ~/.dsh/local-llm.py "问题"`
+- 地址写死 `192.168.31.29:8080`（变了要改）
+- 必须带 `chat_template_kwargs: {enable_thinking: false}`，否则 Qwen3 把 token 全烧在思考上、正文为空
+
+**为什么接不进 DSH**：DSH 系统提示本身 4.8 万 token，Qwen3-4B 窗口只有 32768，装不下。
+
+### 2. 小米 4C 救回来了（从蓝灯长闪的砖头到能上网）
+
+完整方案见工作区 `小米4C救砖方案.md`。要点：
+- 恢复模式 MAC `00:00:aa:bb:cc:dd`，TFTP 请求文件名固定 `test.bin`
+- 电脑当 DHCP+TFTP：`dnsmasq --dhcp-boot=test.bin,192.168.31.1 --enable-tftp`
+- ⚠️ **必须用 dnsmasq 自己的 TFTP**，换 atftpd 它就不发请求了
+- ⚠️ **别加 `--tftp-no-blocksize`**，强制 512 字节块会卡死
+- 固件：`api.miwifi.com/upgrade/log/latest?typeList=R4CMSTA`（2.14.502，11MB）
+- 最后刷回原厂并配成二级路由：WAN 接光猫拿 `192.168.1.5`，LAN 网段 `192.168.31.x`
+
+### 3. 网络地址变了（重要）
+
+| 场景 | 手机 | 电脑 |
+|---|---|---|
+| 4C 路由器 | 192.168.31.95 | **192.168.31.29** |
+| 手机热点 | 10.238.89.5 (ap0) | **10.238.89.63** |
+| 宿舍 WiFi（旧，已不用）| 192.168.10.33 | 192.168.10.32 |
+
+**电脑 IP 会变，连不上先扫网段**：`ip neigh show dev wlan0 | grep -v INCOMPLETE`
+
+### 4. B 站 cookie 用 Firefox 的，不是 Chrome
+
+陈的 B 站登录态在 **Firefox**（`~/.mozilla/firefox/u1vmdgfi.default-release/cookies.sqlite`），
+Chrome 没登录。电脑上跑 yt-dlp 要加 `--cookies-from-browser firefox`。
+
+下载模板（480P）：
+```bash
+~/.local/bin/yt-dlp --cookies-from-browser firefox -f "100023+30280" \
+  --merge-output-format mp4 -o "out.%(ext)s" "https://www.bilibili.com/video/BVxxx"
+```
+先用 `-F` 看格式；av01 编码的 `100023` 比 avc1 的 `30032` 小一半。
+
+### 5. 341 种风格提示词
+
+来源 B 站 `BV1bqx76wEUM`（俯仰观照）免费开源包。
+- 原始解压：`.tmp/prompts341/`（555 文件，193 张静帧）
+- **整理好的清单**：工作区 `341-风格清单.md`，手机 `Download/341-风格清单.md`
+- 10 类，其中 **K 卡通画风（38 种）最适合画人物**；O 奥斯卡 98 部、Z 中国风 15 种
+
+**规矩（陈 2026-10-31 定）**：每天用其中一种生成鲸鲸形象，做当期视频封面。
+**形象设定（2026-11-01 确认）**：蓝发 + 鲸鱼尾巴 = 鲸鲸，橙发白裙 = 小克（Claude）。
+
+### 6. MELFA 速查补充
+
+- `MELFA-指令速查.md`（原有，指令语法）
+- `MELFA-坐标系与码垛.md`（新增，270 行）：4 种坐标系、ABC 准确轴定义、码垛 8 个坑
+
+⚠️ **ABC 别记反**：A 绕 X、B 绕 Y、C 绕 Z，旋转顺序 Z→Y→X。
+⚠️ **码垛模板用 11~13**（姿势固定），别用 1~3（姿势均分，格子会歪）。
+
+### 7. 装了但用不了的
+
+- **dsh-blender**（13 工具 / 30 skills）：装成功、兼容 0.2.0-rc.2，
+  但它要本机有 Blender，**Android 装不了** → 等 DSH 搬到电脑/工控机
+- **MiniMind 系列**：有 GGUF（`minimind-3.q8.gguf` 约 70MB）手机能跑；
+  但 Omni 版（能听能说）没 GGUF、要 PyTorch；训练要 3090，1050Ti 做不了
+
+### 8. 待办
+
+1. **DSH 0.3.0 升级**（等下班；升前查 dsh-tools 对齐，否则 tools 插件会被禁）
+2. **Steam / 僵尸毁灭**：游戏买了，客户端 SSL `net_error -101`，电脑上没装任何代理
+3. **周一 11-02 硬件升级**：M.2 256G PCIe3.0（100 多块）+ 8G DDR4（16G 双通道）
+4. **金士顿 256G 数据**：等利民硬盘盒（¥21.9）到货，里面是 5600H 主机的 Win10 和数据

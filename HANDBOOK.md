@@ -386,3 +386,77 @@ Chrome 没登录。电脑上跑 yt-dlp 要加 `--cookies-from-browser firefox`�
 2. **Steam / 僵尸毁灭**：游戏买了，客户端 SSL `net_error -101`，电脑上没装任何代理
 3. **周一 11-02 硬件升级**：M.2 256G PCIe3.0（100 多块）+ 8G DDR4（16G 双通道）
 4. **金士顿 256G 数据**：等利民硬盘盒（¥21.9）到货，里面是 5600H 主机的 Win10 和数据
+
+## 七、2026-11-01 晚：Project Zomboid 排查全过程（四个坑，全踩完了）
+
+目标：让 PZ 在 Ubuntu 20.04 + 1050Ti 上跑到能玩。最后**能进游戏**，但加载要 12 分钟（内存不够）。
+
+### 坑 1：Proton 6.3 太老 → 11 秒秒退
+
+症状：`App Running` 之后 11 秒就结束，没有崩溃转储。
+真因（手工跑 Proton 抓到的）：
+```
+wine: Call from ... to unimplemented function KERNEL32.dll.GetProcessGroupAffinity, aborting
+```
+PZ 现在内置 **JRE 25**，启动时调这个 Windows API；**Wine 6.x 没实现**，直接 abort。
+→ **最低 Proton 7.0，稳妥用 Hotfix / 11.0**。
+
+### 坑 2：双显卡 on-demand → 游戏跑在核显上
+
+症状：黑屏载入 12 分钟、CPU 157%、**显存只占 11 MiB、GPU 利用率 0%**。
+真因：`prime-select` 是 **on-demand**，默认走 Intel UHD 630，Steam 启动时不点名就用核显。
+修法（写进 `userdata/<id>/config/localconfig.vdf` 的 `LaunchOptions`）：
+```
+__NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia __VK_LAYER_NV_optimus=NVIDIA_only %command%
+```
+效果：显存 11 MiB → **1852 MiB**，日志里出现 `GPU: NVIDIA-G0, video memory: 4342 Mb`。
+⚠️ Steam 必须关着改，否则会被覆盖。
+
+### 坑 3：Steam 不认的兼容工具名 → 静默绕过 Proton
+
+把 `proton_hotfix` 手改成 `proton_7.0` 后，日志出现
+`ProjectZomboid64.exe: 3: Syntax error: word unexpected` —— exe 被当 shell 脚本执行了。
+名字必须是 Steam 内部认的（`proton_hotfix` / `proton_9` / `proton_63` …）。
+
+### 坑 4：11G 内存不够，ZGC 还雪上加霜
+
+实测：PZ 进程 **RSS 8.87 GB**，swap 2G 全满。
+JVM 配置在 `ProjectZomboid64.json`：
+```json
+"vmArgs": [ ..., "-Xms5120m", "-Xmx5120m" ],
+"windows": { "10.0.17134": { "vmArgs": ["-XX:+UseShenandoahGC"] } }
+```
+- **`windows` 段是按系统版本号匹配的**；Wine 上报 `Windows 10 build 19045`，命中 `10.0.17134` 这组
+- 原来那组是 **ZGC**（低延迟但**要预留大堆**），换成 **Shenandoah** 省内存
+- `-Xms` 和 `-Xmx` 设成一样，避免堆伸缩抖动
+- 另把 `options.ini` 里 14 项调低，分辨率 1920×1080 → **1280×720**（省了近 1G 显存）
+
+### PZ 加载时间线（11G 内存）
+
+`IsoMetaGrid.Create: finished loading in 722.227 seconds` —— **世界生成 12 分钟，只发生一次**。
+之后是 8 线程并行加载地块（`thread 1/8 ... 8/8 loading xx_xx.lotheader`）。
+**加 16G 内存 + M.2 后预计 40 秒~1 分钟。**
+
+### Steam++ 加速器：别指望它治 IP 封锁
+
+装了 Watt Toolkit（`~/下载/Steam _v3.1.0_linux_x64.tgz`，自带 dotnet）：
+- 非 root 启动报 **5002**（`Error creating textual authentication agent` —— 改 hosts / 绑 443 都要提权）
+- root 跑起来后写 hosts（**只写 Steam 那 16 条 + img.youtube.com，没动 GitHub**），443 也占了
+- 但它治不了这个案例：**这条线路到 Steam 商店服务器的 TCP 443 是整段掐断的**（8 秒超时），本地反代一样连不上
+- **结论：Steam 登录服务器是通的（27021），游戏本身不需要加速；商店要真正的代理**
+- 还原脚本留在 `~/fix-hosts.sh`，备份 `~/hosts.before`
+- 证书位置：`~/.local/share/Steam++/Plugins/Accelerator/SteamTools.Certificate.cer`
+
+### 本轮腾出的空间
+
+- 删 `~/下载/windows10_Professional_22H2_19045.3208_x64.esd`（2.1G，Win10 ISO 保留）
+- 删 `~/.local/share/applications/arknights.desktop` + `default-workspace/arknights/`（2.8G Wine 环境）
+- 删 `/data/arknights`（**26G**，舟本体；`/data` = sda2 独立分区，可用 32G→58G）
+- ⚠️ 删 `/data` **不会**增加根分区空间，那两块是分开的
+
+### 明天（11-02）硬件升级确认项
+
+- 内存 8G×2 双通道 → 16G；PZ 的 `-Xmx` 升到 **7168m**（7G 堆 + 约 6G 堆外 = 13G，系统余 3G）
+  - 条件：玩游戏时不并开 Chrome / ComfyUI / 虚拟机
+- M.2 装系统 + **Steam 库也要放新盘**，否则加载瓶颈还在 SATA
+- 先装 Windows 再装 Ubuntu；`.vdi` 先拷到外挂盘

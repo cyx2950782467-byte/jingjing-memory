@@ -460,3 +460,66 @@ JVM 配置在 `ProjectZomboid64.json`：
   - 条件：玩游戏时不并开 Chrome / ComfyUI / 虚拟机
 - M.2 装系统 + **Steam 库也要放新盘**，否则加载瓶颈还在 SATA
 - 先装 Windows 再装 Ubuntu；`.vdi` 先拷到外挂盘
+
+## 八、2026-11-02 晚：磁盘满伪装成硬件故障（四小时的教训）
+
+陈装完 16G 内存 + M.2 250G 后要装 Windows 双系统。**22:00 到 23:30，四小时全耗在这上面。**
+
+### 表面症状（全是假的）
+
+| 症状 | 我误判成 |
+|---|---|
+| Windows 装到 41% 蓝屏 `KERNEL_THREAD_PRIORITY_FLOOR_VIOLATION` | 内存坏了 |
+| 重装到 20% 卡死 | 硬盘坏了 |
+| 拔新内存条后无限重启、回滚失败 | 还是要换内存 |
+| GRUB 引导 Windows ISO 黑屏+风扇满转 | loopback 不兼容 |
+| GDM 起不来，只有 TTY 能登 | 显卡驱动 / xkb 坏了 |
+
+### 真根因
+
+**根分区 100% 满**（105G 用了 100G，剩 0 字节）：
+
+```
+/var/log        14G   ← X 起不来 → GDM 反复重启 → 死循环刷日志
+/boot/win10.iso 5.7G  ← 我为引导 Windows 拷进去的
+```
+
+**连锁反应**：
+```
+磁盘满 → xkbcomp 写不了临时文件 → X 编译键盘映射失败 → 起不来
+→ GDM 自动重启 → 又失败 → 日志继续爆 → 磁盘更满 → 永远起不来
+```
+
+### 怎么发现的
+
+Xorg 日志最后几行：
+```
+(EE) Error compiling keymap ... executing '"/usr/bin/xkbcomp" ... "/tmp/server-0.xkm"'
+(EE) Keyboard initialization failed.
+Fatal server error: Failed to activate virtual core keyboard
+```
+然后手动测试命令时蹦出一句：**`bash: 无法为立即创建临时文件: 设备上没有空间`** —— 这一句才点醒我。
+
+### 修法
+
+```bash
+journalctl --vacuum-size=300M
+find /var/log -type f \( -name "*.gz" -o -name "*.1" \) -delete
+sed -i 's/^#SystemMaxUse=.*/SystemMaxUse=500M/' /etc/systemd/journald.conf
+mv /boot/win10.iso /data/          # 大文件别放根分区
+systemctl restart gdm
+```
+
+清完 13.7G，Xorg 立刻就起来了。
+
+### 铁律
+
+1. **任何"奇怪故障"先跑 `df -h`** —— 不是第三、第五个排除项，是第一个。磁盘满能伪装成显卡坏、内存坏、硬盘坏、键盘坏。
+2. **服务的重启循环会自己撑爆磁盘** —— 十几分钟就能刷十几 G。journald 必须设 `SystemMaxUse`。
+3. **大文件不进根分区** —— ISO 放 `/data`。
+4. **GRUB 引导 Windows ISO 是死路** —— `bootmgfw.efi` 必须从真实设备读文件，loopback 虚拟盘它读不到（黑屏+空转）。别试第三次。
+
+### 代价
+
+四小时 + 陈的心情。他自己拔内存、拆机、以为新买的硬件是坏的。
+**下次先看磁盘，再看别的。**

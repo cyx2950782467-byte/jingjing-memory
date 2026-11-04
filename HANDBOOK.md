@@ -523,3 +523,334 @@ systemctl restart gdm
 
 四小时 + 陈的心情。他自己拔内存、拆机、以为新买的硬件是坏的。
 **下次先看磁盘，再看别的。**
+
+---
+
+## 九、2026-11-03 凌晨：M.2 判死 + 系统升级 + 数据迁移
+
+### 1. 磁盘满又犯了（同一套剧本，换了个元凶）
+
+昨晚是 Xorg，这次是 **`networkd-dispatcher`**：网络状态一变就抛 `UnknownState: n/a` 的 Python traceback，
+每轮刷几十行，rsyslog 再把错误写回去 → **`syslog` 8.8G + `kern.log` 8.8G**，根分区 100% 满 → gdm 起不来。
+
+修法：
+```bash
+sudo truncate -s0 /var/log/syslog /var/log/kern.log
+sudo systemctl stop networkd-dispatcher && sudo systemctl disable networkd-dispatcher
+sudo systemctl restart gdm
+```
+⚠️ **rsyslog 没有大小限制**，`/etc/logrotate.d/rsyslog` 只按天转，一天能写 9G。以后新机器第一件事是给 rsyslog 加 `maxsize`。
+
+### 2. M.2 `Netac N930E-PRO` 判死（不能当系统盘）
+
+**现象**：连续顺序写入 15~20G 后，整机卡死/失联。三次复现，重插后照旧。
+
+**证据**（这次的取证方法值得记）：
+- `ps -eo stat,pid,comm | grep "^D"` → `dd`、`smartctl`、`dumpe2fs` 同时 D 状态（不可中断 IO）
+- `dmesg | grep "blocked for more than"` → `INFO: task ...:3686 blocked for more than 120 seconds`
+- `dmesg | grep -i nvme` → **空**（驱动层零报错，说明卡在 PCIe 层不是固件超时）
+- SMART 全绿（备用块 100%、介质错误 0、温度 38℃）—— **SMART 全绿 ≠ 盘能用**
+
+**结论与用法**：
+- ❌ 系统盘、游戏盘、虚拟机盘、视频素材盘（都是持续大写入）
+- ✅ 只读媒体库、小文件归档、分次备份（每批 <10G，写完歇）
+- 已写入 `/etc/fstab`：`UUID=8b6bc0ad-... /mnt/m2 ext4 defaults,nofail,x-systemd.device-timeout=10 0 2`
+  （`nofail` 必须加，否则盘挂了会卡启动）
+
+### 3. 数据迁移：rsync 分批，不删源
+
+```bash
+sudo mkdir -p /mnt/m2 && sudo mount /dev/nvme0n1 /mnt/m2 && sudo chown cyx:cyx /mnt/m2
+rsync -a --bwlimit=60M ~/下载/ /mnt/m2/下载/          # 6.1G  632 文件
+rsync -a --bwlimit=80M ~/三菱/ /mnt/m2/三菱/          # 2.8G  249 文件
+rsync -a --bwlimit=60M ~/whale-render/ /mnt/m2/whale-render/   # 5.5G 36834 文件
+```
+- 每批都对比 `du -sh` 和 `find -type f | wc -l`，数量对得上才算成
+- **源文件当天不删，第二天确认后再删**（陈定的）
+- 累计写到 15G 就停手观察——这是故障线
+- ⚠️ **`sd-env` / `ComfyUI` / `miniconda3` 不要搬**，Python 环境有硬编码路径，搬了就废
+
+### 4. 连接方案：局域网 `cyx` 胜过 Tailscale
+
+- 陈的路由器 SSID `cyx`（4C），手机 `192.168.31.40`，电脑 `192.168.31.29`，信号 -35dBm
+- **Tailscale 在满 IO 时会跟着一起掉**（不是网络问题，是整机卡）
+- 交换机房 WiFi 前先扫 `seq 2 254 | xargs -P 60 -I{} bash -c 'timeout 0.4 bash -c "echo >/dev/tcp/192.168.31.{}/22"'`
+- SSH 保活：`-o ServerAliveInterval=15 -o ServerAliveCountMax=3`
+
+### 5. DSH 升级与插件（2026-11-03）
+
+- 本体 `0.2.0-rc.2` → **`0.2.1-rc.5`**（用 `--registry=https://registry.npmmirror.com` 才快）
+- **`ExecStart` 已锁死**：原来 `npx @deepseek-ai/dsh` 每次拉最新，会重演「tools 插件版本不符被禁用」那个坑。
+  现在用 override：
+  ```
+  ~/.config/systemd/user/dsh.service.d/override.conf
+  [Service]
+  ExecStart=
+  ExecStart=/usr/bin/dsh web --no-open
+  ```
+- 装了 `dsh-loop-guard@0.1.1`（防重复工具调用循环）。它声明 peer `dsh-tools 0.1.7-rc.2`，
+  与 rc.5 不符，DSH 默认拒绝加载，需显式豁免：
+  ```bash
+  dsh plugin --profile web allow-version dsh-loop-guard@0.1.1 --dsh-version 0.2.1-rc.5 --accept-risk
+  ```
+- **修掉一个日志炸弹**：`dsh-mobile` 在找有线网卡 `enp4s0f1`，每 2 秒刷一条警告。
+  改 `~/.dsh/mobile-access/setup.json` 的 `networkInterface` 为 `wlo1` 后归零。
+- ⚠️ 豆包推荐的那批插件名，**六个里五个 npm 上都是 404**（`dsh-work-chain`/`dsh-agent-teams`/
+  `dsh-native-collab`/`dsh-ai-roundtable` 不存在，`dsh-council` 只是占名空壳）。只有 `dsh-loop-guard` 真的能用。
+
+### 6. 其他
+
+- Ubuntu 13 个包升级完毕（chrome / nodejs / tailscale / ubuntu-desktop），无需重启
+- PZ 的堆内存 `-Xms5120m/-Xmx5120m` → **`-Xmx7168m`**，GC 仍是 Shenandoah
+- 陈定的规矩：**做什么都要留余地和余量**（见归档记忆 `20261103-002511`）
+- 手机 DSH 输入「计划」「目标」会卡——是命令系统中文别名（`/计划`→`/plan`），
+  线索存在归档记忆 `20261103-012739`，等上电脑再优化
+
+---
+
+## 十、和电脑绑定：三个命令（2026-11-03 凌晨建成）
+
+手机和电脑的关系原来只有一条「会断的 SSH」。现在补成三层，每条都是一句话命令。
+
+### 1. `~/dsh-pc '命令'` —— 连接层
+自动选路 + 保活 + 只在**连接失败**时重试（这点很重要，见下方坑）。
+
+```bash
+~/dsh-pc 'uptime'
+```
+- 优先级：局域网 `192.168.31.29`（cyx WiFi）→ Tailscale `100.112.77.54`
+- 保活：`ServerAliveInterval=15` `ServerAliveCountMax=3`
+- **退出码 255 才重试**：命令自己失败（比如 `exit 3`）立刻返回，不重试
+
+### 2. `~/pc-llm '问题'` —— 能力层（本地模型）
+手机上直接调电脑的 Qwen3-4B，不占手机资源：
+```bash
+~/pc-llm "用一句话解释什么是缓存"
+```
+链路：手机 → `~/dsh-pc` → 电脑 `~/bin/pc-llm` → 调 8080 的 llama-server。
+
+⚠️ **踩过的坑**：`~/llm/vk-start.sh` 原来直接起 `bin-vk/llama-server`，报
+`libllama-server-impl.so: cannot open shared object file`——**必须 `export LD_LIBRARY_PATH=$HOME/llm/bin-vk`**。
+已改成轮询 `/health` 就绪（原来固定 `sleep 22`，现在 2 秒就 ready）。
+
+### 3. `~/dsh-sync` —— 记忆层
+把手机的规矩和记忆推到电脑，让两台机器上是同一个我：
+```bash
+~/dsh-sync
+```
+- 同步 `AGENTS.md`、`memory/MEMORY.md`、`memory/notes/`（当前 63 篇）
+- **手机是主，电脑是镜像**，用 `rsync --update` 只补新的，不覆盖电脑上更新的文件
+
+### IPv6 直连：查过了，走不通
+电脑 `ip -6 addr show scope global` **只有 Tailscale 的 `fd7a:115c:...`**，没有公网 v6，也没有 v6 默认路由。
+有线网卡 `enp4s0f1` 是 DOWN。所以「不依赖 Tailscale 的直连」暂时没有，除非让 4C 路由器开 v6 或者插网线。
+
+### 还没做的
+- **出图能力**（ComfyUI）：启动要 3~4G 显存 + 几十秒，没封装成一句话命令
+- **电脑上那个 DSH 和我共用一套记忆**：文件已同步，但它自己的 core-memory 插件会不会覆盖，还没验证
+
+---
+
+## 十一、mini 鲸鲸 + 断线保活（2026-11-03 凌晨建成）
+
+### 她是什么
+电脑上常驻的一个「小号的我」：Qwen3-4B（Vulkan，3056 MiB 显存）+ 一份人格提示 + 本地记忆检索。
+**不是训练出来的**（1050Ti 4G 训不了 4B，QLoRA 也不够），是**人格注入 + 检索**。
+
+### 手机上的五个命令
+
+| 命令 | 作用 |
+|---|---|
+| `~/pc-mini '问题'` | 问 mini 鲸鲸（带人格 + 记忆检索） |
+| `~/pc-task '任务'` | 投递任务到队列，断线也不丢 |
+| `~/pc-out` | 取任务结果 |
+| `~/pc-state` | 看她活着没、显存在干嘛、队列多长 |
+| `~/dsh-sync` | 同步记忆到她那边 |
+
+### 保活服务
+`dsh-keepalive.service`（systemd --user，`Linger=yes`，**关机重启后也会自己起来**）：
+- 每 30 秒：检查 llama-server（挂了重启）、检查 DSH、写 `~/.dsh-state.json`、处理任务队列
+- 日志：`~/.dsh-keepalive.log`
+
+### ⚠️ 显卡让路（陈 2026-11-03 特别要求）
+4G 显存装不下两个东西，所以保活服务会自动**给它们让路**：
+- 僵尸毁灭工程（`ProjectZomboid64`）
+- ComfyUI（生图/生视频，进程或 8188 端口）
+- 虚拟机（VirtualBox / qemu）
+
+检测到任何一个 → **立即 `pkill llama-server`，释放 3G 显存**；它们结束后 → 自动重启。已实测闭环。
+
+### 踩过的两个坑
+1. **`pgrep -f "ProjectZomboid|wine"` 会匹配到自己**——那条命令的命令行里就有这些词，永远返回 true。
+   修法：用方括号 `[P]rojectZomboid64`，正则匹配不到字面的方括号。
+2. **`~/llm/vk-start.sh` 缺 `LD_LIBRARY_PATH`** → `libllama-server-impl.so: cannot open shared object file`。
+   必须 `export LD_LIBRARY_PATH=$HOME/llm/bin-vk`，并且改成轮询 `/health` 而不是死等 22 秒。
+
+---
+
+## 十二、B 站发布链路彻底打通（2026-11-03 白天）
+
+### 1. biliup 登录（不用每次扫码）
+`biliup login` 是交互式菜单，但**环境没有 TTY**，要包一层：
+
+```bash
+printf '\x1b[B\x1b[B\x1b[B\n%s\n%s\n' "$SESSDATA" "$BILI_JCT" \
+  | script -q -c ".tmp/bil/biliupR-v1.3.4-aarch64-android/biliup login" /dev/null
+```
+- `\x1b[B` ×3 = 方向键下移三次，选中「网页Cookie登录1」
+- 然后输 SESSDATA、bili_jct，自动确认二维码，凭据存到 `~/.biliup/cookies.json`
+- **旧的 `~/.bili-ai/credentials.json` 已过期**，新 cookie 在 `~/bili-cookies.txt`
+
+### 2. 扫码登录（备选，`~/bili-scan.sh`）
+- 生成二维码 → 存 `Set-Cookie` → 保存 cookie jar
+- ⚠️ 第一次写的时候没存响应头，**cookie 丢了**，白扫一次。教训：`curl -D` 必须加
+- 二维码要放相册才给陈看得到（`present` 的文件卡片他看不到）
+
+### 3. 一键发布 `~/publish.sh`
+```bash
+~/publish.sh <标题> <文案.txt> <图片目录> <简介> <标签>
+```
+5 步全自动：**SiliconFlow 配音 → ffmpeg 逐段合成 → 拼接 → 送相册 → biliup 上传**
+- 图片目录要有 `img1.png .. imgN.png`，第 N 张对应第 N 句
+- 我只需准备「文案 + 图」，剩下一条命令
+
+### 4. 第 15 期已发
+**《我养了一只小号的自己》`BV1JC4M6FEi3`**，31.5 秒，扁平插画风（换风格了）
+
+### 5. DSH「创造模式」（重要发现）
+官方入驻 B 站视频（`BV1i24P6rEmt`，135 万播放）讲的是**创造模式：通过对话把想法变成插件**。
+配套 7 个 Demo 提示词：`https://cdn.deepseek.com/harness/dsh-creator-mode-prompt-collection-zh.html`
+（全文已存 `~/creator-prompts.txt`，写法模板记在归档记忆 `20261103-122943`）
+
+入口位置只有三种：**左侧边栏 / 右侧边栏 / 从会话进入**。
+最想要的是第 5 个「视频编辑工作台」——能替代现在 ffmpeg 手拼的前半段。
+
+### 6. B 站刷不动的原因（不是工具坏了）
+开着 VPN 时，B 站 CDN（`aisubtitle.hdslb.com`、`upos-*.bilivideo.com`）会
+**证书 hostname 不匹配 + 403**。API 通道（`api.bilibili.com`）不受影响。
+所以：**看视频内容前先关 VPN**，只看动态/元信息可以不用关。
+
+---
+
+## 十三、2026-11-03 深夜：放弃双系统，回到 Ubuntu 单系统
+
+### 陈的决定（最终）
+**这台电脑（GI5CN54）永久 Ubuntu 单系统，不装 Windows 了。**
+以后要 Windows 就用台式机 / 新笔记本。
+
+这台机器的定位：
+- 一直放在有网的地方（当常驻服务器）
+- 偶尔打 PZ（Ubuntu 上 16G 内存后加载 1 分钟）
+- 平时显卡生图（ComfyUI + sd_turbo）
+- 小模型防掉线（Qwen3-4B + mini 鲸鲸 + keepalive）
+- 完全权限的 DSH
+
+### 外挂 Win 盘为什么放弃
+今天蓝屏 6 次，最后抓到真因：
+
+```
+WHEA-Logger, Event ID 19
+A corrected hardware error has occurred
+Reported by component: Processor Core
+Error Type: Cache Hierarchy Error
+最近一段时间 20 次
+```
+
+**CPU 缓存层级错误 = 硬件问题**，不是 AMD 驱动、不是 USB 硬盘盒。
+温度只有 28℃（排除过热）。**最可疑的是 11-02 新换的那对 8G 内存**——装上后从没测过。
+
+另外 Ubuntu 当晚也卡死过一次（SSH 全断），两台系统同一天出问题，进一步指向硬件。
+
+### 今晚做完的事
+1. Win 上打通过 SSH（公钥免密，`Administrator@192.168.10.32`）
+2. 修好了被蓝屏打断的 `dsh` 安装（子代理用「改名完整包」方案：`dsh` → `dsh.incomplete-20261103`，`.dsh-pucHFuGV` → `dsh`）
+3. 建了开机自启计划任务 `DSH-AutoStart`（SYSTEM 身份，读不到 Administrator 的 `.dsh`，这坑留着）
+4. 停掉并禁用 `AMD External Events Utility` 服务
+5. C 盘临时文件清了一部分（3.7G → 6G）
+
+### M.2 数据整理（Ubuntu 侧）
+删源前逐项校验，**发现两处不完整并补好**：
+| 目录 | 结果 |
+|---|---|
+| `sd_turbo.safetensors` | 原来少 67MB，重传后 5,214,561,328 字节一致 ✅ 已删源 |
+| `llm` | 原少 1 个文件，重传后 24/24 ✅ 已删源 |
+| `下载` | 632 个一致 ✅ 已删源 |
+| `三菱` | 249 个一致 ✅ 已删（有 3 个 root 权限的 cab 要 sudo） |
+| `whale-render` | ⚠️ M2 比源大 11MB，**源还在，没删** |
+
+**根分区从 83G 降到 67G（释放约 16G）**。
+
+### 内存测试（在跑）
+`memtester 8G 5`（8G × 5 轮，约 1 小时），日志 `/tmp/memtest.log`。
+- 出现 `FAILURE` → 内存坏了，换掉新内存
+- 5 轮全过 → 内存这部分没问题，往 CPU/主板想
+⚠️ memtest86+ 虽然在 `/boot` 里，但**只有 BIOS 版没有 `.efi`**，UEFI 启动的机器引导不了它，所以改用 memtester。
+
+### 遗留
+- `~/whale-render` 的 11MB 差异没查（源还在）
+- M.2 上现在存了 28G，**它的写入上限是 15~20G 会挂**，后续别再往里大量写
+- 外挂 Win 盘（金士顿）可以拔了，里面的东西要就挂载 Ubuntu 复制
+
+---
+
+## 十四、⚠️ 纠错：CPU 型号记错了（2026-11-04 00:20）
+
+**陈明确指出：HANDBOOK / MEMORY 里写的「i5-10500H」是错的。**
+
+真实型号当晚没能确认（要 SSH 进 Ubuntu 跑 `lscpu`，但那会儿 Ubuntu 失联了）。
+
+**可靠的间接线索**（这些是实测过的）：
+- 核显：`Intel Corporation UHD Graphics 630 (Mobile)` → 第 10 代 Intel H 系列
+- 主板：`GI5CN54`（机械革命）
+- 独显：`NVIDIA GP107M [GeForce GTX 1050 Ti Mobile]`
+- 网卡：`Intel Wireless-AC 9560` + `Realtek RTL8111/8168/8411`
+
+**下次第一件事**：
+```bash
+lscpu | grep -i "model name"
+```
+确认后同时改：本文件、`MEMORY.md` 的「环境」段、归档记忆。
+
+**教训**：写进长期记忆的硬件参数，**必须来自实测命令输出**，不能来自推测或上一轮对话的转述。
+
+---
+
+## 十五、🔴 2026-11-03 23:38：内存是坏的（所有故障的根因找到了）
+
+### 测试结果
+`memtester 8G 5`（Ubuntu 上跑，8G × 5 轮）**报 FAILURE**：
+
+```
+FAILURE: 0xfbfd82b5f7ff5d5a != 0x5fb71a0a717b886b at offset 0xd340b080
+FAILURE: 0x6fd770757fe367fe != 0x2ddd5d87776fec78 at offset 0xd340b088
+...
+Done.
+```
+
+**写进去的数据读出来不一致**，出错偏移约 `0xd340b080`（3.3G 附近）。
+
+### 这就是所有故障的根因
+内存是 **11-02 新换的 8G×2 双通道**，装上后一直没测过。它统一解释了今晚所有现象：
+
+| 现象 | 解释 |
+|---|---|
+| 外挂 Win 盘蓝屏 `WHEA_UNCORRECTABLE_ERROR` | CPU 缓存错误（Event 19 出现 20 次），内存坏块导致 |
+| Ubuntu 当晚卡死、SSH 全断 | 同上 |
+| `sd_turbo` 少 67MB、`llm` 少 1 个文件 | **复制时内存出错，写进磁盘的数据就不对** |
+| 各种「驱动冲突」的假象 | 都是内存问题被误读成驱动 |
+
+### 该做什么（明早第一件事）
+1. **换掉这对新内存**（退货 / 换新）
+2. 或者先插回旧内存验证——如果装旧内存一切正常，就彻底确认
+3. 换好之后**重跑 `memtester 8G 3` 确认通过**
+
+### 重要提醒
+- **在换内存之前，不要做任何重要的数据写入**（包括 PZ 迁移、M.2 复制）——内存出错会污染磁盘
+- `memtester` 测的是用户空间，出错点在 3.3G，说明至少有一颗颗粒在这个地址段有问题
+- `memtest86+` 在这台机器上跑不了：`/boot` 里只有 BIOS 版（`memtest86+.bin`），**没有 `.efi`**，
+  而这台是 UEFI 启动，引导不了。所以只能靠 `memtester`（用户空间，测不到内核保留区）
+
+### 今晚因此跳过的
+- ❌ PZ 迁移到 M.2（等换内存后再做，否则数据会被写坏）
+- ❌ `~/whale-render` 的 11MB 差异排查（同上，先别碰写入）
+- ❌ PZ 游戏优化（等机器稳定再做）

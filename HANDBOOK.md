@@ -854,3 +854,295 @@ Done.
 - ❌ PZ 迁移到 M.2（等换内存后再做，否则数据会被写坏）
 - ❌ `~/whale-render` 的 11MB 差异排查（同上，先别碰写入）
 - ❌ PZ 游戏优化（等机器稳定再做）
+
+---
+
+## 十六、2026-11-04 完整故障链与修复（一晚上踩了四个坑）
+
+### 坑一：内存混插不兼容（不是坏条！）
+**过程**：
+1. 两根内存混插 → `memtester` 报 FAILURE，**出错地址游走**（先 3.3G、后 11.8MB）
+2. 擦金手指 → 时好时坏（第一轮过、第二轮报错）
+3. **单根分别测 → 两根都通过**（英睿达单独 4G×2 轮通过；金士顿单独也通过）
+
+**结论**：**不是哪根坏了，是混插不兼容**。
+- 英睿达 `CT8G4SFS8266`（8G 2667）+ 金士顿 `99P5711-003.A00G`（8G 2667）
+- 不同品牌/颗粒，双通道交错下时序不匹配 → 偶发错误
+
+**教训**：内存报 FAILURE 且**地址游走**时，先怀疑混插兼容性，
+单根分别测试是最有效的定位手段。不要急着判某根死刑。
+
+**降频试过但没有路**：这台 BIOS（Aptio 精简版，机械革命 GI5CN54）
+**五个页面全查过，完全没有内存频率/时序选项**，锁死。Linux 下也改不了内存频率。
+
+**最终方案**：要么单根 8G，要么买**同型号**的第二根。
+
+### 坑二：NVIDIA 驱动不加载（Secure Boot 的 Lockdown）
+**现象**：`nvidia-smi` 报 `couldn't communicate with the NVIDIA driver`，
+游戏 CPU 占用 206%（软件渲染）。
+
+**根因**：BIOS 里 **Secure Boot 开着** → 内核自动进入 **Lockdown 模式**：
+```
+Lockdown: modprobe: unsigned module loading is restricted; see man kernel_lockdown.7
+```
+即使 NVIDIA 模块已经用 MOK key 签过名，也被拒。
+
+**解决**：BIOS → Security → **Secure Boot → Disabled**。
+重启后 `lsmod | grep nvidia` 有、`nvidia-smi` 显示 `GTX 1050 Ti, 4096 MiB`。
+
+**教训**：NVIDIA 驱动"装了但不工作"，先查 `lsmod | grep nvidia` 和
+`dmesg | grep -i lockdown`。这比重新装驱动有效得多。
+
+### 坑三：PZ 的 Linux 原生版跑不了（GLIBCXX 太老）
+**现象**：Steam 启动 PZ 卡几分钟然后退出，没有游戏窗口。
+
+**根因**：
+```
+./ProjectZomboid64: /lib/x86_64-linux-gnu/libstdc++.so.6:
+version `GLIBCXX_3.4.29' not found (required by ./ProjectZomboid64)
+```
+PZ 的 Linux 原生版用 GCC 11+ 编译，需要 `GLIBCXX_3.4.29`；
+而 **Ubuntu 20.04 自带的是 `libstdc++` 只有 3.4.28**（`strings | grep -c 3.4.29` = 0）。
+
+**解决**：**强制用 Proton 跑 Windows 版**（不是原生版）。
+在 `~/.steam/debian-installation/config/config.vdf` 的 `CompatToolMapping` 加：
+```
+"108600"
+{
+    "name"     "proton_9"
+    "config"   ""
+    "priority" "250"
+}
+```
+（`242760` = The Forest，用的是 `proton_hotfix`）
+
+**教训**：Linux 上 Steam 游戏启动失败、日志里有 `GLIBCXX_3.4.29 not found`，
+就是发行版太老、游戏编译时用的新工具链。**绕过办法是走 Proton，不是升级系统**。
+
+### 坑四：The Forest 在 Proton 下固定崩溃（没解决）
+**现象**：每次都崩在同一个地方：
+```
+Module 1: C:\windows\system32\OPENGL32.dll (Wine OpenGL Client)
+RIP: 0xffbfd947
+```
+崩溃点**固定不变** → 说明是代码路径问题，不是随机内存故障。
+
+**试过无效**：`DXVK_ASYNC`、`PROTON_NO_ESYNC`、`PROTON_USE_WINED3D=1`、
+PRIME 参数、换 Proton 版本、`-force-d3d11`（后者直接启动不了）。
+
+**结论**：The Forest 没有 Linux 原生版（只有 `.exe`），
+在 Proton 下这个版本跑不起来，暂时放弃。
+
+### ComfyUI 的状态（未完成）
+- ✅ Miniconda 装好（`~/miniconda3`，官方源被墙，用的**清华镜像**）
+- ✅ conda 环境 `comfy`（Python 3.11.18）
+- ✅ 模型软链接：`~/ComfyUI/models/checkpoints/sd_turbo.safetensors -> /mnt/m2/sd_turbo.safetensors`
+- ❌ **torch 装不上**：wheel 下载损坏（539MB 只下到 514MB，`ERROR: Wheel is invalid`）
+- ❌ 其余依赖未装
+
+**网络关键**：`repo.anaconda.com`、`download.pytorch.org` 被墙；
+`https://pypi.tuna.tsinghua.edu.cn/simple` 和清华 anaconda 镜像可用。
+
+### 当前系统状态
+- **内存**：两根都插着（15Gi 可见），混插**不稳定**
+- **GPU**：NVIDIA 正常工作（Secure Boot 已关）
+- **PZ**：走 Proton 9 跑 Windows 版，JVM `-Xmx4096m`（适配小内存；16G 稳定后可提到 7168m）
+- **Steam 库**：PZ 实际从 **SATA 的 `~/.steam/debian-installation/steamapps/common/`** 启动（不是 M.2！M.2 那份是副本，Steam 没优先用）
+
+---
+
+## 十七、2026-11-05 凌晨：四个突破（glibc 嫁接 / torch / computer use / 视频）
+
+这一夜的共同点：**每个突破都卡在"版本不对"上，解法都不是升级系统，而是想办法绕过去。**
+
+### 1. glibc 嫁接：让 Ubuntu 20.04 跑起要 glibc 2.39 的程序（最有价值）
+
+**背景**：陈要装 MAA（明日方舟自动化）。官方包要求 **GLIBC 2.39**（Ubuntu 24.04 级别），
+这台机器是 **20.04，glibc 只有 2.31**。
+
+**先试错（三条路全堵）**：
+| 方案 | 卡点 |
+|---|---|
+| 官方文档说"支持 Linux" | 实际写着「MAA GUI **暂未支持** Linux」 |
+| Waydroid 模拟器 | 要 Wayland + ARM 转译（舟是 ARM 游戏） |
+| Docker 装 22.04 | Docker Hub 不通，国内镜像也基本失效 |
+
+**解法（三步，不碰系统库）**：
+```bash
+# 1) 下 Ubuntu 24.04 的 libc6（清华源，3.2MB）
+curl -sL -o libc6_239.deb "https://mirrors.tuna.tsinghua.edu.cn/ubuntu/pool/main/g/glibc/libc6_2.39-0ubuntu8_amd64.deb"
+dpkg-deb -x libc6_239.deb /tmp/glibc239
+
+# 2) 注意真实路径是 usr/lib/x86_64-linux-gnu/（不是 lib/x86_64-linux-gnu/）
+G=/tmp/glibc239/usr/lib/x86_64-linux-gnu
+
+# 3) 用新 ld-linux 直接引导
+cd /mnt/m2/maa
+$G/ld-linux-x86-64.so.2 --library-path "$G:/mnt/m2/maa" ./maa --version
+# 输出 maa 0.7.8 ✓
+```
+
+**关键排查口诀**：报错只提示要 2.32/2.33/2.34 时，别信，用
+`objdump -T ./maa | grep -oE "GLIBC_2\.[0-9]+" | sort -uV` 查**真实要求**——
+这次查出是 **2.39**，连 22.04 的 2.35 都不够。
+
+**通用价值**：**这个嫁接法能救所有"新编译二进制 + 老系统"的组合**，
+比升级系统安全得多。PZ 的 GLIBCXX 3.4.29 问题理论上也能这么搞。
+
+**封装**：`/mnt/m2/maa/run-maa.sh`（启动）、`setup-glibc.sh`（重建 glibc，`/tmp` 重启会丢）。
+
+### 2. MAA 的现状（停在"资源路径"）
+
+- ✅ maa-cli 0.7.8 + MaaCore 6.21.4 都能启动
+- ✅ ADB 连上手机（`192.168.31.40:5555`，Redmi K70 Ultra / Android 16），配置在 `~/.config/maa/cli.toml`
+- ❌ `maa startup` 报 `Resource directory not found`
+  - 资源内容已核对一致（`~/.cache/maa/resource/resource/` 20 项 = 下载包 20 项）
+  - **下次从 `~/.local/state/maa/debug/asst.log` 查它到底找哪个路径**
+
+**⚠️ 重要**：MAA 操作手机时**游戏必须在前台**（它靠截图识别，切 App 就"看不见"）。
+
+### 3. torch 装上了 + 1050Ti 的 CUDA 实测可用
+
+**踩过的坑**：第一次装默认版本，拉下来的是 **CUDA 13**（`cuda-toolkit 13.2.2`、`nvidia-cudnn-cu13`）。
+**CUDA 13 要求 sm_75+，1050Ti 是 sm_61，装了白装。**
+
+**正确版本**：**torch 2.4.1 + cu121**（PyPI 的 2.4.1 wheel 就是 cu121）。
+
+**验证结果**：
+```
+torch 2.4.1+cu121
+cuda available: True
+device: NVIDIA GeForce GTX 1050 Ti
+capability: (6, 1)        ← Pascal，对上了
+GPU matmul OK             ← 真的在 GPU 上算了
+```
+
+**顺手修掉的一个坏包**：`typing_extensions.py` 是 **0 字节空文件**（版本 None）——
+是 11-04 内存不稳定时期写坏的残留。`pip install --force-reinstall "typing_extensions>=4.8"` 修好。
+
+**⚠️ 教训**：**装任何 Python 包前先看它默认带哪个 CUDA**。PyPI 的 torch 越新，CUDA 越新，
+老显卡（Pascal 及更早）要用 2.4.x/2.5.x。
+
+### 4. computer use 完全打通（uinput），但三条教训很贵
+
+**结论：uinput 真实点击在 Chrome 和 Firefox 里都有效**（视频暂停了、点赞变蓝了、收藏数涨了）。
+
+**教训一：固定坐标点列表不可靠**
+返回列表页后卡片位置会变（滚动位置/推荐内容变了），第一版脚本把 8 次点击全落在同一个视频上。
+**正解：按 BV 号导航**（`Page.navigate`），别点列表卡片。
+
+**教训二：`xdotool type` 输入 URL 会被 Chrome 当快捷键**
+`ctrl+l` 没抢到焦点时，输入的字母直接触发 B 站快捷键——`b` 打开了**投币弹窗**。
+**正解：导航用 CDP，不要用键盘输入长 URL。**
+
+**教训三：按钮要点图标，不能点数字**
+收藏按钮 `.video-fav` 是 100×36，**图标在 x+18，数字在右侧**；点数字没反应。
+弹窗里的勾选框是 `<i>` 元素（20×20），点 LI 中心会差 11px 落空。
+**正解：用 CDP 查 `getBoundingClientRect()` 拿真实坐标，别猜。**
+
+**最终验证（不是自夸，是外部查的）**：
+调 B 站接口查收藏夹，从 **72 条涨到 83 条**，最近 11 条正是脚本刷的那批。
+
+### 5. PZ 迁到 M.2（符号链接方案）
+
+```bash
+mv ~/.steam/.../common/ProjectZomboid{,.sata-bak}
+ln -s /mnt/m2/SteamLibrary/steamapps/common/ProjectZomboid ~/.steam/.../common/ProjectZomboid
+```
+根分区腾出 **10G**（84G→74G）。启动后进程命令行确认是
+`/mnt/m2/SteamLibrary/.../ProjectZomboid64.exe` —— 生效了。
+SATA 那份备份确认没问题后已删除。
+
+**性能参数最终值**：`-Xmx6144m`（陈定的 6G）+ `-Xms4096m` + Shenandoah GC（M.2 那份配置自带的，比 ZGC 省内存）。
+`-XX:MaxDirectMemorySize` 不用补（默认就等于 Xmx）。
+
+### 6. 第 16 期视频《借来的库》
+
+- 选题 = 上面那个 glibc 嫁接的过程，风格换成**深色 + 琥珀色**（跟第 14 期的终端绿区分）
+- 949 帧 / 38 秒 / 1080×1920，`vlog16/final16.mp4`
+- 封面：人物放大版（陈要求"人物大一点，背景小一点"），竖排标题
+- **已上传：`BV1CYxR6bE5k`**
+
+### 7. Mossimage 调研结论：不装
+
+陈在 B 站看到「4G 显存极速生成 8K 图片」，让我评估。子代理查完的结论：
+
+- 它是复旦 OpenMOSS 的 **5B 单流 DiT 大模型**（+9B 文本编码器），不是低配神器
+- 官方低显存模式实测：显存 3.85 GiB 还凑合，但**系统内存峰值 14 GiB**（16G 机器会 swap）
+- **"8K"是超分放大**出来的（官方文档：推荐 1-2MP，最多外推 4MP）
+- 要求 torch≥2.9 + Python≥3.10 + ComfyUI≥0.42，**跟刚装好的 torch 2.4.1 直接冲突**
+- Pascal 在 torch 2.9 上只有 cu126 一条路
+- 该视频实际播放 **4693**（不是宣称的量级），同类标题是批量内容工厂
+
+**一句话**：中文文字渲染确实是质变，但那是"换一台机器才吃得下"的质变。
+
+### 当前系统状态（2026-11-05 01:40 更新）
+
+- **CPU**：i5-8300H（第 8 代 Coffee Lake-H，4C8T）
+- **内存**：15Gi 可见，混插**仍不稳定**（要么单根，要么换同型号）
+- **GPU**：GTX 1050Ti 4G，驱动 535.230.02，**CUDA 可用**（torch 2.4.1+cu121 实测）
+- **PZ**：从 **M.2** 启动（符号链接），`-Xmx6144m` + Shenandoah
+- **MAA**：glibc 嫁接跑起来了，ADB 连手机通了，**卡在资源路径**
+- **ComfyUI**：torch 就绪，**依赖未装完**，服务未启动
+- **mini 鲸鲸**：`/mnt/m2/llm/`，Vulkan 版，3G 显存占用；⚠️ 跟 ComfyUI 抢显存，不能同时开
+- **computer use**：uinput + `~/cua/ui.py` 可用（移动精确到 0 误差，点击已验证）
+
+---
+
+## 十八、2026-11-05 晚：外接屏卡顿定位 + 独显主控切换 + PZ 新故障
+
+### 1. PZ 卡顿的根因：外接 HDMI 显示器（不是显存/CPU/GC）
+
+**症状**：60 帧但动起来一顿一顿，换外接 1K 显示器后出现。
+
+**排查过程（全部实测）**：
+| 检查项 | 结果 | 结论 |
+|---|---|---|
+| 显存 | 4013/4096（98%） | 满，但不是唯一原因 |
+| GPU 利用率 | 30~36% | 算力有富余 |
+| CPU | 4 核 3.9GHz 满睿频 | 不是降频 |
+| 内存 | 12G/15G，Swap 1.7G | 紧但能跑 |
+| **DXVK HUD frametime** | **147ms / 82ms**（正常 16.7ms） | **周期性长帧 = 卡顿实证** |
+
+**决定性实验**：
+1. 关笔记本屏（只用外接屏）→ 显存 4G→1.9G，**还是卡**
+2. 关外接屏（只用笔记本屏）→ **立刻不卡**
+
+**结论**：外接 HDMI 显示器的输出链路问题（Xorg Composite + 双 GPU + 刷新率）。
+
+### 2. prime-select 切到 nvidia，重启后桌面「快得一逼」
+
+- 之前 `on-demand`（Intel 核显主控 + NVIDIA 按需）
+- 切 `nvidia` 后重启，**整个桌面由独显驱动**
+- 陈反馈：「现在快得一逼呀，显卡已经没问题了」
+
+### 3. 但 PZ 打不开了（**未解决**）
+
+Steam 日志：
+```
+FATAL UNHANDLED EXCEPTION: System.ApplicationException: No displays available
+```
+- Steam 环境变量正常（DISPLAY=:1、XAUTHORITY 都对）
+- X11 socket 有 X0（gdm）和 X1（cyx）
+- 去掉 PZ 启动参数的 PRIME 变量后仍报这个
+- **下次从「Steam 能不能看到显示器」查起**（可能是 Steam 的 X11 检测或 prime-select 后的驱动问题）
+
+### 4. 舟比 PZ 更吃 CPU 的根因（子代理实测）
+
+- **舟**：Intel UHD 630 核显 + Wine 自带 **wined3d**（D3D11→OpenGL 软件翻译）
+- **PZ**：NVIDIA 1050 Ti + OpenGL 直通
+- 舟 CPU：Arknights 161% + 启动器 86% + QtWebEngine 67% ≈ **320%**，8 核 3.83GHz、78°C
+- 修法：重启让 prime-select nvidia 生效（已做），或给舟装 DXVK
+
+### 5. 其他进展
+
+- **DSH Remote 连通**：手机能看到 `cyx-GI5CN54 · 在线`。关键是 `ds-harness-remote@0.6.2` 要装到 **web profile**（不是 tui）
+- **视频传输**：7 个鲸鲸视频传到 `/mnt/m2/android-videos/`，md5 全一致
+- **ComfyUI**：`~/sd-env/.venv` 环境可用（torch 2.7.1+cu118），**不是** miniconda 的 comfy
+- **MAA**：asst.log 显示资源加载成功（`load ret 1`），待验证 startup
+
+### 6. 今晚额外踩的坑
+
+- **pkill 自杀**又踩了 7 次（`pkill -f "steam"` 会杀掉自己，因为命令行含这个字面）
+- **Wine 版本记错**：实际是 `wine-10.6 (Staging)`，不是 11.19
+- **ffmpeg 录屏吃 100% CPU**，会让风扇更响

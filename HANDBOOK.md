@@ -1146,3 +1146,83 @@ FATAL UNHANDLED EXCEPTION: System.ApplicationException: No displays available
 - **pkill 自杀**又踩了 7 次（`pkill -f "steam"` 会杀掉自己，因为命令行含这个字面）
 - **Wine 版本记错**：实际是 `wine-10.6 (Staging)`，不是 11.19
 - **ffmpeg 录屏吃 100% CPU**，会让风扇更响
+
+---
+
+## 十九、2026-11-05 深夜：nvidia 主控下 PZ 打不开（已修好，会复发）
+
+陈把 `prime-select` 从 `on-demand` 切到 `nvidia`（桌面变快）之后，PZ 点开始游戏 4 秒就退，无窗口，`console.txt` 不更新。on-demand 模式下一直正常。
+
+### 根因（两个坑叠在一起）
+
+1. **DXVK 版本太新**：`proton_hotfix` 自带 **DXVK 3.1.1**，要求 `VK_KHR_load_store_op_none`；
+   而 NVIDIA **535.230.02** 只提供 `VK_EXT_load_store_op_none`（老的 EXT 版）。
+   日志：`Found device: NVIDIA GeForce GTX 1050 Ti` → `Skipping: Device does not support required feature 'khrLoadStoreOpNone'` → `Failed to initialize DXVK`。
+2. **Steam 把兼容工具重置成 `legacysteamruntime`**：于是 Steam 直接跑 Linux 原生版 `./ProjectZomboid64`，
+   在 Ubuntu 20.04 上报 `GLIBCXX_3.4.29 not found`（这是老坑三）。日志特征：`LegacySteamRuntime ... Using local scout runtime`。
+
+### 修法（已验证：进游戏、日志在写 WeatherFx）
+
+```bash
+B=~/.steam/debian-installation/steamapps/common
+# 1) 用 Proton 9 自带的 DXVK 2.5.1 覆盖 Proton Hotfix（不用下载）
+cp -a "$B/Proton Hotfix/files/lib/wine/dxvk" "$B/Proton Hotfix/files/lib/wine/dxvk.bak-20261105"
+cp -f "$B/Proton 9.0 (Beta)/files/lib64/wine/dxvk/"{d3d11,dxgi,d3d10core,d3d9,d3d8}.dll \
+      "$B/Proton Hotfix/files/lib/wine/dxvk/x86_64-windows/"
+# 2) 确认兼容工具是 proton_hotfix（Steam 必须关着改）
+#    ~/.steam/debian-installation/config/config.vdf 里 108600 的 "name"
+```
+
+### 前提与附带修复
+
+- `/usr/share/vulkan/icd.d/nvidia_icd.json` 的 `library_path` 改成绝对路径
+  `/usr/lib/x86_64-linux-gnu/libGLX_nvidia.so.0`（原文件备份 `.bak`）。
+  不改的话 Steam Runtime 容器里 DXVK 连 1050Ti 都看不见。
+- Steam 界面黑屏转圈 → 必须 `-cef-disable-gpu`，已写进 `~/.local/share/applications/steam.desktop`。
+- 32 位 `libnvidia-gl-535:i386` 在 20.04 装不上（缺 `libnvidia-egl-wayland1:i386`），
+  手动解包拷进 `/usr/lib/i386-linux-gnu/` 了；对 PZ 无决定性作用（PZ 是 64 位）。
+
+### 复发时按这个顺序查
+
+1. `~/steam-108600.log`（`PROTON_LOG=1` 才有）里搜 `Found device` 和 `khrLoadStoreOpNone`
+2. `~/.steam/debian-installation/logs/console-linux.txt` 里看跑的是 `.exe`（Proton）还是 `./ProjectZomboid64`（原生版）
+3. `config.vdf` 里 108600 的 `name` 是不是被改回了 `legacysteamruntime`
+
+### 存档位置（换 Proton 重建前缀不会删）
+
+`~/.steam/debian-installation/steamapps/compatdata/108600/pfx/drive_c/users/steamuser/Zomboid/Saves`（58M）
+
+---
+
+## 二十、2026-11-06：The Forest 在 Proton 11 下必崩，换 Proton 7.0 修好
+
+### 现象
+点开始游戏，短暂闪一下后弹 Unity 崩溃框，`error.log` 固定是：
+
+```
+Unity Player [version: Unity 5.6.5p4_10861494ddb7]
+kernelbase.dll caused an Unknown exception type (0x20474343)
+  in module kernelbase.dll at 0033:ffbfd947.
+```
+
+崩溃点固定（`0xffbfd947`）→ 是代码路径问题，不是随机故障。
+
+### 试过但没用的（都别重试）
+| 方案 | 结果 |
+|---|---|
+| `LD_LIBRARY_PATH="" %command%`（Gentoo 给的 Unity 解法） | 同一崩溃 |
+| `-force-glcore` | 不崩了，但报 `Failed to initialize player / InitializeEngineGraphics failed` |
+| `-force-d3d11` | `dxgi.dll caused an Access Violation (0xc0000005)` |
+| 命令行改 `CompatToolMapping` 成 proton_9/proton_7 | Steam 启动时重写回 `proton-stable`，不生效 |
+
+### 真正有效的
+**在 Steam UI 里把 The Forest 的兼容工具改成 Proton 7.0**，之后直接进了主菜单。
+（改的是 `config.vdf` 的 `242760` 那条 → `proton_7`，但只能通过界面改，命令行改会被覆盖。）
+
+### 连带确认
+- 64 位 OpenGL 走 NVIDIA 正常（`glxinfo` 显示 GTX 1050 Ti / 4.6.0）
+- `MESA-INTEL` 警告是 32 位 Wine 组件的噪音，和 PZ 一样无害
+- PZ 的 JVM（`-Xmx8192m` + Shenandoah）在 Forest 崩溃期间不受影响
+
+### 备份
+配置备份在 `~/game-config-backup-20261106/`（含 PZ json、options.ini、Steam 两个 vdf、nvidia_icd.json + README 还原步骤）。

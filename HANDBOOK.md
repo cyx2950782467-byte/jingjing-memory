@@ -1226,3 +1226,218 @@ kernelbase.dll caused an Unknown exception type (0x20474343)
 
 ### 备份
 配置备份在 `~/game-config-backup-20261106/`（含 PZ json、options.ini、Steam 两个 vdf、nvidia_icd.json + README 还原步骤）。
+
+## 二十一、2026-11-07：小屋、配乐、连续看屏幕、AI 唱歌调研
+
+### 1. 鲸鲸的小屋（whale-house/）
+
+**是什么**：一个纯 HTML 的「家」，鲸鲸的立绘站在等距小屋里，带时间光影、台灯、海浪声、状态机。
+
+**文件**：
+- `index.html`（约 400 行，无依赖）
+- `room.png`（等距小屋，generate_image 生成）
+- `jingjing.png` + `jingjing_glow.png`（立绘 + 光晕）
+- `sea-loop.mp3`（AnyAudio 生成的 30 秒海浪循环）
+
+**关键做法**：
+- **落地阴影**：`#shadow` 径向渐变 + blur，让立绘「站」在地上
+- **呼吸**：`scale = 1 + .014 * sin(t)`，`translateY(6*sin(t+.6))`
+- **时间联动**：按真实小时调 `--room-bright` / `--room-hue`，白天 .92/0、黄昏 .78/-8、夜里 .52/-14
+- **台灯**：点热区开关 `#lampGlow`，夜里关灯加暗罩
+- **状态机**：idle / think / happy / listen / sleep，**0~6 点自动睡**
+- **点她**：`whale` 的 click → 跳两下 + 说一句
+
+**跑法**（电脑）：
+```bash
+cd ~/whale-house && setsid nohup python3 -m http.server 8123 --bind 127.0.0.1 > server.log 2>&1 < /dev/null &
+firefox --kiosk http://127.0.0.1:8123
+```
+⚠️ **不要用 `pkill -f "http.server 8123"` 停服务**——它会匹配到自己的 SSH 命令把连接杀掉。
+
+### 2. AnyAudio（dsh-any-audio 0.1.0）
+
+**用途**：本地写歌 / 音效 / 配音 / 混音，SoundFont 真实乐器。
+
+**安装踩的坑**：
+- `.sf3`（压缩格式）**插件解析不了**，必须 `.sf2`
+- 官方 raw.githubusercontent.com 不通 → 用 **`https://gh-proxy.com/<原始url>`** 镜像可下
+- GeneralUser GS 30.8MB 是够用的基础音源
+
+**配置位置**：`~/.dsh/anyaudio/config.json`
+- `tts.edge.voice`：默认音色（**已改成 `zh-CN-XiaoyiNeural` 晓伊**，原来云健是男声）
+- `music.font`：默认音源（GeneralUserGS.sf2）
+
+**局限**：`anyaudio_tts` 只生成文件，**不会自动播放**。手机端 `termux-media-player` 会报 InvocationTargetException，改用 `am start -a android.intent.action.VIEW -d file:///...` 打开系统播放器。
+
+### 3. see-now（dsh-see-now 0.1.4）：连续看屏幕
+
+**做什么**：按画面变化量挑帧、多帧拼一张图给模型看，静止画面几乎不花 token。
+
+**关键**：
+- **不是自动的**——必须主动调 `see_now({action:"watch"})` 才开始采集
+- 抓的是**手机屏幕**；电脑屏幕要用 SSH + `import`
+- `pace` 四档：calm / normal / dense / game-economic，**这是唯一能真正降低出图频率的旋钮**
+- `quality`：low（798×462）/ standard / high / ultra
+
+### 4. AI 唱歌（RVC）调研结论
+
+**4G 显存能做与不能做的**：
+- ✅ **推理**：RVC 官方内置 4G 窗口档（`gpu_mem<=4` 时 `x_pad=1/x_query=5/x_center=30/x_max=32`），峰值 1.5~2.5GB
+- ✅ **人声分离**：Demucs `--two-stems=vocals --segment 8`
+- ❌ **训练**：官方 FAQ 自己说「4G 有救但 batch 要缩到 1~2，易 OOM」
+
+**推荐路线**：**租 AutoDL 4090 训一次**（10 分钟数据 200 epoch ≈ 20~40 分钟，**不到 2 元**），拿 `.pth` 回本机推理。
+
+**别碰**：so-vits-svc（2023-11 归档）、OpenVoice / GPT-SoVITS（是 TTS 唱不了）、Seed-VC（已归档，4G 跑 44.1k 大概率 OOM）。
+
+### 5. PZ 存档复活：改了 isDead 也没用
+
+**尝试**：`players.db` 的 `localPlayers.isDead` 从 1 改成 0。
+
+**结果**：一进游戏**又变回 1**，角色变僵尸。
+
+**根因**：`data` 字段（4535 字节二进制）里存着角色真实的健康状态，感染已经是既成事实；`isDead` 只是死亡标记，骗不过去。**PZ 原版没法真正复活**。
+
+**沙盒改感染**（这个有效）：
+- `map_sand.bin` 是 PZ 的沙盒二进制，结构是 `键\0\x01值\0`
+- `ZombieLore.Transmission`：1=BloodAndSaliva（默认），**5=None（不感染）**
+- 改法：`data.replace(b"ZombieLore.Transmission\x00\x011\x00", b"ZombieLore.Transmission\x00\x015\x00")`
+
+### 6. DSH 版本：App 0.3.0 ≠ 引擎 0.3.0
+
+**发现**：App 升级到 0.3.0 后，`~/.dsh/engine` 里的 `@deepseek-ai/dsh` **还是 0.2.0-rc.2**。
+
+**原因**：APK 里确实内置了新引擎（`assets/engine.bin`，52MB gzip → 250MB tar，内容是完整 `node_modules`），但**升级时没有解压替换** `~/.dsh/engine`。
+
+**结论**：解出来一看**还是 0.2.0-rc.2**（跟旧的一样），所以**换不换都一样**。真升级引擎得等 npm 上的 `@deepseek-ai/dsh` 出新版。
+
+### 7. 人设与音色
+
+- `persona` 工具设了**自定义风格**（鲸鲸：平稳直接、先结论、卡住就说卡住、不装）
+- AnyAudio 默认 TTS 音色改成 `zh-CN-XiaoyiNeural`（晓伊，女声）
+
+### 8. 转成视频 / 配乐的固定流程
+
+第 19、20 期都走这套：
+1. `generate_image` 出房间 / 封面底图
+2. `render.py`（PIL）逐帧合成：房间 + 立绘（呼吸/浮动/光晕）+ 字幕
+3. `ffmpeg -framerate 25 -i frames/f%05d.png -c:v libx264 -pix_fmt yuv420p` 合成
+4. `anyaudio_music` 写配乐 → `anyaudio_mix` 混进视频（`video` + `videoOutput`，视频流 copy）
+5. 封面 PIL 加竖排标题（**注意字号与总高度，别超出画布**）
+6. `biliup upload` 带 `--cover` 上传
+
+⚠️ 第 20 期踩过：**封面标题 7 个字 × 158 间距会超出 1472 高的画布**，压住副标题。改成字号 128、间距 132 才对。
+
+---
+
+## 二十二、2026-11-07 深夜：硬件结论更正（内存 / M.2）
+
+**陈明确说：内存和 M.2 现在都没问题了。** 下面这些旧结论作废，别再拿它们当障碍：
+
+| 旧结论 | 出现位置 | 状态 |
+|---|---|---|
+| 两根 8G 混插（英睿达 + 金士顿）报 memtester FAILURE，只能单根 | 第十六节「坑一」 | ❌ 作废 |
+| M.2 Netac N930E-PRO 连续写 15~20G 主控失联，不能当系统盘 | 第九节第 2 条 | ❌ 作废 |
+
+**仍然有效、别跟着一起作废的**：
+- 任何奇怪故障第一件事 `df -h`（磁盘满伪装成显卡/内存/硬盘坏，跟内存条和 M.2 无关）
+- Secure Boot 必须关（开着 → Lockdown → NVIDIA 模块被拒）
+
+**另外**：**MAA 不做了**（陈：别管了）。第十七节第 2 条那个「卡在资源路径」的待办、以及后来卡住的 `TouchModeNotAvailable`／MaaTouch 方向，一并作废。
+
+
+---
+
+## 二十三、2026-11-08：桌面鲸鲸、建模、MV、照片迁移
+
+### 1. Live2D 桌面挂件（电脑右下角，能说话）
+
+代码在电脑 `/home/cyx/live2d/desktop/`（`main.js` + `preload.js` + `index.html`），模型在 `../work/model/deepseek.model3.json`。
+
+**启动命令（参数一个都不能少）**：
+```
+cd /home/cyx/live2d/desktop && DISPLAY=:1 setsid nohup /home/cyx/live2d-desktop/node_modules/.bin/electron . \
+  --no-sandbox --in-process-gpu --disable-dev-shm-usage >/tmp/jj-desk.log 2>&1 < /dev/null &
+```
+
+⚠️ **去掉 `--in-process-gpu --disable-dev-shm-usage` 必崩**：`GPU process launch failed: error_code=1002` → `FATAL: GPU process isn't usable` → SIGTRAP。在这个 SSH 会话里 GPU 子进程起不来，只能同进程跑 GPU。
+
+**本地接口 9878**：`GET /mouth`（含 mode 字段）、`POST /speak {durationMs}`（张嘴）、`POST /mode {mode:"small"|"normal"}`。
+**自动缩窗**：main.js 每 3 秒用 `xprop -root _NET_ACTIVE_WINDOW` + `_NET_WM_STATE` 查当前窗口是否全屏，全屏切 small(168×288)，退出恢复 normal(420×720)。
+
+**CPU 优化（实测从 100% 降到 12%）**：页面里 `app.ticker.maxFPS = 30`。
+
+**杀进程要按 cwd 区分**（`readlink /proc/<pid>/cwd`），`pkill -f electron` 会连别的 electron 一起杀。
+
+### 2. 陪看脚本 watch.py（`/home/cyx/live2d/watch.py`）
+
+每 30 秒抓屏、算变化度、值得说才 TTS 说话 + 调 `/speak` 张嘴。
+**抓屏一定要直接出缩略图**：`import -window root -resize 160x90 png:-`。之前抓 1920×1080 再缩，单次吃 129% CPU，游戏明显卡。
+阈值实测标定：静止 0.004~0.014、开小窗 0.065、开关大窗 0.33、拖窗 0.41。
+
+### 3. Project Zomboid 存档复活（Proton）
+
+**存档不在 `~/Zomboid`**，在 Proton 兼容层里：
+`~/.steam/steam/steamapps/compatdata/108600/pfx/drive_c/users/steamuser/Zomboid/Saves/Sandbox/<时间戳>/players.db`
+
+复活方法：**先完全退出游戏**（不然下次存档会覆盖回去），然后
+```sql
+UPDATE localPlayers SET isDead = 0;   -- 技能背包在 data 字段，不受影响
+```
+表结构：`localPlayers(id,name,wx,wy,x,y,z,worldversion,data,isDead)`、`networkPlayers(...)`。
+复活后角色在原死亡位置，周围僵尸还在。
+
+### 4. Blender 建模：布尔挖洞失效就用贴片法
+
+东方之门（10 版）和清真寺（5 版）都是 `blender --background --python` 跑的，**不会在 GUI 里出现**。
+
+**最大的坑**：布尔差集挖拱门/门窗，两次尝试都没生效（立面始终是平墙），原因没定位。**换成「深色薄片贴在立面上」一次就成了**——以后做门窗、开孔，先用贴片法。
+
+**尺寸单位坑**：`primitive_cube_add(size=1)` 的边长是 1，`size=2` 才是顶点 ±1。混用会让模型缩小一半、贴片飞到建筑外面。**统一用 `size=2`，scale 填半尺寸，这样填的数字就是真实米数。**
+
+**洋葱穹顶**：用 bmesh `spin` 旋转一条 profile 曲线，比 UV sphere 拉伸可控。
+**画质**：AgX 会把金色高光压白，要出"金色发光"效果就换 `view_transform='Standard'` + 降 Emission。
+
+### 5. MV 制作链路（《不想忘记你》BV1LVWH67Eyk，43.2 秒）
+
+| 环节 | 工具 |
+|---|---|
+| 伴奏 | `anyaudio_music`（MuseScore General / GeneralUser GS，钢琴+弦乐+贝斯） |
+| 人声 | `anyaudio_tts`（edge-tts `zh-CN-XiaoyiNeural`，语速 -12%~-16%） |
+| 混音 | `anyaudio_mix`（人声自动压低伴奏 4.5dB，峰值 -1.5 dBFS） |
+| 嘴型 | numpy 算 50ms RMS 包络 → `ParamMouthOpenY`（0.05~0.95，起快收慢） |
+| 画面 | pixi 6.5.10 + pixi-live2d-display 0.4.0 + puppeteer（`--enable-unsafe-swiftshader`） |
+| 合成 | ffmpeg（1080 张 PNG + 音轨 → 1080×1920 25fps） |
+
+渲染速度：1080 帧 **251.7 秒**（4.29 帧/秒），合成 19.2 秒。
+**取帧必须用 `canvas.toDataURL('image/png')`**，`page.screenshot()` 拿到的是空背景。
+
+⚠️ **这不是真唱**：TTS 是念，不是唱。要真唱得先有「一条人声源」——Suno（要 VPN + $10/月 + Visa，中文咬字是短板）或 OpenUtau（按谱唱，音色偏电子）。RVC 只能换音色，不能合成歌声。
+
+### 6. 照片迁移：卡在 2.4GHz WiFi
+
+手机相册 `/sdcard/DCIM/Camera` 5979 个 / 40.83GB → 电脑 `/mnt/m2/android-photos/Camera`。
+
+**第一次只有 0.37 MB/s（要 30 小时）**，根因：两端都在同一个 2.4GHz AP（ch11）、电脑在跑游戏吃 269% CPU、有线口 `enp4s0f1` 空着。游戏关掉后升到 1.8~2.5 MB/s（约 5 小时）。
+**教训：大文件走局域网，先看 `iw dev wlo1 link` 的频段和 `df -h` 的空间，别急着开传。**
+
+rsync 命令（可断点续传）：
+```
+nohup setsid rsync -a --partial --progress --timeout=600 \
+  -e "ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=30" \
+  /sdcard/DCIM/Camera/ cyx@192.168.31.29:/mnt/m2/android-photos/Camera/ > rsync.log 2>&1 < /dev/null &
+```
+
+### 7. B 站插件调研：几个 Windows-only 的坑
+
+连续遇到三个 DSH 插件都是 **Windows 专用**，看完 README 才省下时间：
+- `thawline/dsh-wechat-bridge`（微信桥接）—— 要 `explorer.exe` / `python.exe` / 微信桌面版
+- `thawline/dsh-desk-drop`（拖拽文件）—— README 明写「只支持 Windows」
+- 微信另一条 WeChatAgent —— Windows 宿主 + Ubuntu 虚拟机跑微信，封号反馈一堆
+
+**看插件先看平台**，尤其作者 `thawline` 的。
+
+### 8. 记忆库改造（hippocampus/recall.py）
+
+参考 bigeye 的设计加了：`importance: 1-10`（≥7 钉住不衰减）、`0.5^(天数/30)` 时间衰减、输出字符预算（默认 3600，`--budget` 可调）、`--stale` 列该归档的（只提示不删）。
+**原因**：原来只增不减，越往后 recall 越像考古。

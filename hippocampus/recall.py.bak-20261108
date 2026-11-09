@@ -1,0 +1,112 @@
+#!/usr/bin/env python3
+"""小海马体 · 检索
+
+用法:
+  python recall.py                    # 最近 7 天
+  python recall.py 关键词 [关键词...]   # 全文 + 标签检索
+  python recall.py --tag 标签           # 按标签
+  python recall.py --date 2026-10-22    # 某天
+  python recall.py --limit 10           # 条数上限（默认 15）
+  python recall.py --facts              # 先打事实库
+
+只读文本，不依赖任何模型或向量库。
+"""
+import os, re, sys, json
+from glob import glob
+
+HOME = os.path.expanduser("~")
+BASE = os.path.join(HOME, ".dsh", "hippocampus")
+EPISODES = os.path.join(BASE, "episodes")
+FACTS = os.path.join(BASE, "facts.md")
+
+
+def parse_front_matter(text):
+    meta = {}
+    body = text
+    m = re.match(r"^---\s*\n(.*?)\n---\s*\n", text, re.S)
+    if m:
+        for line in m.group(1).splitlines():
+            if ":" in line:
+                k, v = line.split(":", 1)
+                v = v.strip()
+                if v.startswith("[") and v.endswith("]"):
+                    v = [x.strip() for x in v[1:-1].split(",") if x.strip()]
+                meta[k.strip()] = v
+        body = text[m.end():]
+    return meta, body
+
+
+def load_all():
+    items = []
+    for path in sorted(glob(os.path.join(EPISODES, "*.md")), reverse=True):
+        try:
+            text = open(path, encoding="utf-8").read()
+        except Exception:
+            continue
+        meta, body = parse_front_matter(text)
+        items.append({
+            "file": os.path.basename(path),
+            "date": meta.get("date") or os.path.basename(path)[:-3],
+            "type": meta.get("type", "event"),
+            "tags": meta.get("tags") or [],
+            "body": body,
+            "text": text,
+        })
+    return items
+
+
+def show(item, limit_chars=600):
+    tags = " ".join("#" + t for t in item["tags"])
+    body = item["body"].strip()
+    if len(body) > limit_chars:
+        body = body[:limit_chars] + "\n…（截断，看全文: " + item["file"] + "）"
+    print(f"── {item['date']} [{item['type']}] {tags}")
+    print(body)
+    print()
+
+
+def main():
+    args = sys.argv[1:]
+    items = load_all()
+    if "--facts" in args:
+        print(open(FACTS, encoding="utf-8").read() if os.path.exists(FACTS) else "(无 facts.md)")
+        return
+    limit = 15
+    if "--limit" in args:
+        i = args.index("--limit")
+        try:
+            limit = int(args[i + 1]); del args[i:i + 2]
+        except Exception:
+            pass
+    if "--date" in args:
+        i = args.index("--date")
+        d = args[i + 1] if i + 1 < len(args) else ""
+        del args[i:i + 2]
+        items = [x for x in items if d in x["date"]]
+    if "--tag" in args:
+        i = args.index("--tag")
+        t = args[i + 1] if i + 1 < len(args) else ""
+        del args[i:i + 2]
+        items = [x for x in items if t in (x["tags"] or [])]
+    kws = [a for a in args if not a.startswith("--")]
+    if kws:
+        scored = []
+        for it in items:
+            hay = it["text"].lower()
+            score = sum(hay.count(k.lower()) for k in kws)
+            taghit = sum(1 for k in kws for t in it["tags"] if k.lower() in t.lower())
+            if score or taghit:
+                scored.append((score + taghit * 2, it))
+        scored.sort(key=lambda p: (-p[0], p[1]["date"]), reverse=False)
+        items = [it for _, it in scored]
+    else:
+        items = items[:7]
+    if not items:
+        print("没找到。试试别的词，或 python recall.py --facts")
+        return
+    for it in items[:limit]:
+        show(it)
+
+
+if __name__ == "__main__":
+    main()

@@ -203,6 +203,23 @@
 > **产品没有增加，就是没有在前进。承认卡住比假装努力便宜。**
 <!-- dsh-loopguard END -->
 
+<!-- dsh-upgrade-rollback BEGIN（陈 2026-11-14 01:50 定）-->
+## 大版本更新：先有回滚，我再动手装
+
+陈 2026-11-14：「下次更新大版本之前，一定要设置一键回滚。你来更新安装包吧，我不动手了。」
+
+**顺序不许颠倒**：
+1. **先备份当前 APK**（`shell` 通道：`pm path com.dsh.android` → `cp` 到 `/sdcard/dsh-rollback/com.dsh.android-<ver>-<code>.apk`），记 sha256。
+2. 备份配置与记忆：`~/.dsh/profiles/web/{package.json,cordis.patch.yml}`、`~/.dsh/memory`（rsync 到电脑 + push GitHub `jingjing-memory`）。
+3. 确认回滚命令能写得出来：`pm install -r -d <备份的 apk>`（`-r` 覆盖、`-d` 允许降级、数据保留）。
+4. **以上齐了才装新包。** 装之前把回滚点告诉陈一句。
+5. 装完若连环降级：读 `~/.dsh/rescue/state.json`，用 rescue 信箱 `switch-back`；仍不行就回滚。
+
+**现有回滚点**：`/sdcard/dsh-rollback/`（`com.dsh.android-0.5.0-115.apk`，sha256 `c47079ae…`，+ `rollback.sh` + `README.txt`）。
+
+⚠️ 教训：2026-11-14 00:25 那晚升到 0.5.0 没有回滚点，结果连环降级折腾了 1.5 小时，靠考古会话才把记忆补回来。
+<!-- dsh-upgrade-rollback END -->
+
 <!-- dsh-dsstack BEGIN（2026-11-08 从 BV1zcxC6QEvA「DeepSeek 技术栈」摘的，不装那套 29 条技能）-->
 ## 五条硬规矩（DS-Stack 里唯一值钱的部分）
 

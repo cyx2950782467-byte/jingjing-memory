@@ -2,6 +2,25 @@
 
 > 更新于 2026-10-27 21:15 · 新会话先读这个，别从零摸索。
 
+## 2026-11-14 更新（引擎升到 0.2.2-rc.1；鲸鲸直播间成型）
+
+> 简明交接请直接看 `handoff.md`（五字段，每次重写）；本文件是长期手册。
+
+- **鲸鲸直播间**：本地两版成片已完成、**未开播未发布**，等陈定版。
+  - v1 `live-sample/whale-live.mp4`（74.0s / 8.7MB）、v2 高清 `live-sample/whale-live-hd.mp4`（73.99s / 7.6MB，角色区边缘能量 7.35→20.85）
+  - 手机已导：`/sdcard/Movies/鲸鲸直播间-{样品,高清版}.mp4`；对比图在相册
+  - 路线：**Coopanion**（AGPL 免费，不用 Live2D）+ OBS WebSocket `127.0.0.1:4455` 密码留空推流
+  - 素材 `whale-house/pets/` 9 角色 spritesheet 来自 @无知少女の末路 → **发 B 站必须署名**
+  - 真开播差：装 Coopanion/OBS、B 站开播权限（粉丝门槛未确认）、连真弹幕
+- **引擎/插件**：App 0.5.0 + 引擎 `0.2.0-rc.2 → 0.2.2-rc.1`。踩过两个坑（都已修）：
+  1. 三个内置 bundle 被摘出 `bundles` → 前端健康检测失败 → 救援/安全模式连环降级（**别再关它们**）
+  2. `dsh-tool-subagent-control/list-agents` 子路径被删 → cordis.patch.yml 那行会让**新建会话失败**（已删该行）
+- **待办（明天）**：Windows 线 —— 数字人（Metavance/inZOI）、EPSON / YASAWA 机械手、三菱 RT Toolbox、3D 打印建模（要再买硬盘+打印机）；另有 `dsh-mobile` 升级、`wallpaper-engine` 装回、`meow-memory` 让位、3081 局域网访问
+- **磁盘**：手机 `/data` 只剩 3.2G，装新版 APK 前先清
+
+---
+
+
 ---
 
 ## 一、现在能用的（都实测过）

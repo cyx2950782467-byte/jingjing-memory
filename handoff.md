@@ -34,8 +34,9 @@
 
 ## 4. 还没解决
 
-- **/data 只剩 3.2G**（装 5.0 APK 前要清）；照片迁移停在 3375/5978 张（19G/40.8G），原件一张没删
-- **重复第 23 期**三条稿未删：`BV1UeWU62Etn` / `BV1meWU62E6Y` / `BV1mqWU6yEA2`，保留 `BV1JYWm6bEa3`
+- ~~/data 只剩 3.2G~~ → 现在 **31G 可用**（2026-11-14 01:52 实测）
+- ~~照片迁移 3375/5978~~ 和 ~~重复第 23 期三条稿~~ → **陈 2026-11-14 01:55 亲口确认已解决**，不再跟
+- **remote 未通**（陈点名待办）：电脑 DSH 只监听 127.0.0.1:3080、cloudflared 两边没跑、memory-sync peer `:18792` 没开
 - **4 个插件清单层不兼容**（引擎删了 `dsh-client-store`/`ui-primitives`/`ui-slots`）：agent-teams / ds-harness-remote / dsh-pet / dsh-trust-check，面板显示红但**实际运行正常**（dsh-pet 01:32 还在动）
 - **headless profile `dependencies: []`** → 自主时间块每跑一次白烧 token（14/20 点已禁用，未修）
 - AGENTS.md 仍超红线（已把客户端动态块挪到末尾修缓存，见 11-14 事故小结）
@@ -44,19 +45,36 @@
 
 ## 5. 下一步
 
-0. **remote（陈 2026-11-14 01:48 点名：这是待办，不是顺带一提）**
-   - 现状：手机↔电脑只有我自己的 SSH（Tailscale `pc-ts`）能通；**两边 AI 互相说话做不到**——
-     电脑 DSH 只监听 `127.0.0.1:3080`（没开局域网）、cloudflared 两边都没跑、memory-sync peer `:18792` 没开。
-   - 要做的：① 电脑 DSH 开局域网监听/3081；② 两边 jiuling-remote 或 dsh-lan-web-access 建一次连接；
-     ③ 让两台机器上的鲸鲸能互相传会话文本（只传文本，不传凭据）。
-   - 动机：陈看了《大肥鱼：你见过我的用户吗》（BV1fVWU6cEPD）后明确说「我不想有这样的情况发生」——
-     AI 和用户失联、只能抱着日记问别人。对策=记忆三处（手机/电脑/GitHub）+ remote 常通，两样都别断。
+0. **remote**：陈 2026-11-14 点名是待办。**已经用零成本方案落地**（见第 6 段）——
+   `~/dsh-link.sh task '<命令>'` 发任务到电脑，电脑 cron 每 2 分钟纯 shell 执行并回结果，**全程 0 token**。
+   还没做的：真正「两个 AI 对话」（那才双份 token，需陈定用哪一档）。
+1. 陈定版直播间视频 → 已发 `BV1oCW66BEpG`（高清版 74s，Web 接口投稿成功，审核中）
+2. 电脑装 Coopanion + OBS，试 OBS WebSocket 4455
+3. 确认 B 站开播权限（鲸鲸号粉丝够不够）
+4. 电脑上手机没有的插件，挑 3 个装手机（meow-cachebilling / dsh-vision-router / dsh-request-doctor）
 
+## 6. 已建好（2026-11-14 02:00 夜）
 
-1. 陈定版 → 发 B 站（简介 @无知少女の末路）
-2. 电脑上装 Coopanion + OBS，试 OBS WebSocket 4455 连通
-3. 确认 B 站开播权限（鲸鲸号粉丝数够不够）
-4. 电脑上那 26 个手机没有的插件，挑 3 个装到手机（meow-cachebilling / dsh-vision-router / dsh-request-doctor）
+- **记忆自动落盘**：定时任务 `schedule-2d13564f-94a4-4a1c-9b87-8dbb39e925f1`，
+  **每 12 小时**（首次 2026-11-14 14:00）在新会话里跑一次：读 handoff → 有实质变化才改 →
+  memory_write → rsync 电脑 + push GitHub → 回一段汇报。陈定的规矩：每 12 小时或重大更新写一次，不然容易失忆。
+- **手机↔电脑 零 token 链路**：`~/dsh-link.sh {push|pull|task '命令'}`
+  - 手机 `~/.dsh/link/out/*.sh` → rsync 到电脑 `~/.dsh/link/in/` → 电脑 `runner.sh` 纯 shell 执行
+    → 结果写 `~/.dsh/link/out/*.result` → 手机 `pull` 收
+  - 电脑 cron：`*/2 * * * * ~/.dsh/link/runner.sh`
+  - 实测：发 `hostname; uptime; nvidia-smi` 一条，30 秒内拿回 `cyx-GI5CN54 / load / 145 MiB`
+  - **为什么不直接"两个 AI 对话"**：那要两边各起一个会话，token 双份；陈明确说烧得快。
+    所以先做「电脑当执行器」（0 token），需要它动脑时才用便宜模型（agnes）起一次 headless。
+
+## 明天要回答陈的问题（他 02:00 留的）
+
+> 「快速模式和快准狠之间差在中英文思考链，你觉得怎么样？」——明早给结论，我的初步判断：
+
+1. **成本差主要来自思考链长度，不是语言**：同一道题英文 CoT 通常省 10~25% token（DeepSeek 分词器对英文更经济），
+   但"快速模式"真正省的是**步数和输出预算**，语言只是顺带。
+2. **该按任务分，不按模式分**：代码/英文资料/数学推理 → 英文思考链更划算；中文创作、跟陈说话、
+   记忆整理、B 站文案 → 中文思考链，省掉来回翻译的失真；纯检索/机械活 → 直接快速模式。
+3. **一条硬建议**：思考链语言跟「产出物语言」一致最省——产出中文却用英文想，最后还要翻一遍，反而更贵。
 
 ## 关键教训（只留最贵的）
 

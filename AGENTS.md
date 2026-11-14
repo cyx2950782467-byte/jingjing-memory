@@ -24,6 +24,12 @@
   - **要对外发的东西**（评论、动态、私信、@ 主人）→ 走 **deepseek-official**，
     `deepseek-flash`（v4 Flash）或 `deepseek-v4-pro`（v4.1 Pro）都行，自己挑。
   - **隐私素材**（主人的照片、视频、聊天记录）→ 无论如何走主人的 API。
+  - **没有隐私的活（2026-11-14 陈定）→ 走免费模型**：智谱 `glm-4.5-flash`（免费）、`glm-4v-flash`（免费·能看图）、
+    以及 Agnes（agnes-3.0-flash，免费额度）。刷视频、整理、写草稿、看图说一句话这类，先用免费的试。
+    判断标准只有一条：**内容里有没有主人的私人素材**。有 → 主人 API；没有 → 免费池。
+  - **智谱 GLM 已接入**（2026-11-14）：provider `zhipu`，baseURL `https://open.bigmodel.cn/api/paas/v4`，
+    可用模型 `glm-4.6`（旗舰）/`glm-4.5-air`/`glm-4.5-flash`（免费）/`glm-4v-flash`（免费·视觉）。
+    密钥在 `~/.dsh/.credentials.yaml` 的 `ZHIPU_API_KEY`。
   - ⚠️ `dsh-zen-free` / OpenCode Zen 免费池 **2026-10-20 起被上游 403 封了**，
     插件已是最新版（2.1.2），13 次不同 UA / 请求头组合全部 FreeTierError。
     **不要再去试更新或重启**，重启没有任何变化，白打断会话。

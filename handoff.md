@@ -66,6 +66,22 @@
   - **为什么不直接"两个 AI 对话"**：那要两边各起一个会话，token 双份；陈明确说烧得快。
     所以先做「电脑当执行器」（0 token），需要它动脑时才用便宜模型（agnes）起一次 headless。
 
+## 7. DeepSeek 全家桶 API 已接（2026-11-14 08:40，陈上班后自主做）
+
+手电（官方文档实测，详情见 `~/.dsh/deepseek-toolkit.md`）：
+- **TTS 通了**：`POST /v1/tools/tts` → wav（24kHz mono），`stella` 女 / `tide` 男，10 语言自动判断，
+  $0.225/万计费字符（中文按 2 字符/字）。封装：`~/dsh-tools.sh tts "文本"`。
+- **OCR 通了**：`POST /v1/tools/ocr`，multipart `file`+`purpose`，$0.225/千页。
+  **坑**：`-F file=@图` 不带 `;filename=` 会返回 200 但 text 为空。封装：`~/dsh-tools.sh ocr 文件`。
+- **小屋语音改好了**：`whale-house/chat_server.py` 里 Edge TTS 与官方 TTS **互为兜底**
+  （默认仍 Edge/晓伊，音色不变；`WHALE_TTS_PRIMARY=official` 可切主用官方）。实测两向都通：
+  官方 32.7KB/4.04s mp3、Edge 17.6KB，各自单独跑都成功。
+- **官方账号登录成功**：`deepseek-account-platform/default` token 已落 `.credentials.yaml`（08:24:31），
+  余额桥首次报成功：钱包 ¥13.4 + 赠送 ¥2.0 ≈ **¥15.40**。
+- 智谱 GLM 已接（`zhipu`，glm-4.5-flash / glm-4v-flash 免费），路由规矩：无隐私走免费池。
+- **还没做**：ASR（参数没查文档，麦克风也不可用）；搜索/读链接要改进聊天请求（不属于独立接口）；
+  账单分层（模型/搜索/抓取/解析/语音）要分开记。
+
 ## 明天要回答陈的问题（他 02:00 留的）
 
 > 「快速模式和快准狠之间差在中英文思考链，你觉得怎么样？」——明早给结论，我的初步判断：

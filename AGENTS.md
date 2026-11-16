@@ -292,6 +292,21 @@
 
 <!-- dsh-independent-work END -->
 
+<!-- dsh-publish-ledger BEGIN（2026-11-16 事故后定）-->
+## 投稿前必须查台账，否则会重复发
+
+**事故**：2026-11-16 自主时段的会话 14:02 已发第 2 集（`BV1XYsw6REtm`），
+主会话 20:51 又发了一遍（`BV1bpsA6HEGo`）。根因：自主会话只写 `hippocampus/episodes/`，
+**没写 handoff**，主会话看不到。
+
+**规矩**：
+1. **发之前先读 `~/.dsh/publish-log.md`**，确认这一集不在表里
+2. **发完立刻追加一行**（时间/内容/BV/aid/谁发的）
+3. **自主时段、子代理、主会话，谁都一样**
+4. 只写 `episodes/` 不够——**投稿这种外部动作必须写进 `publish-log.md`**
+
+<!-- dsh-publish-ledger END -->
+
 <!-- dsh-vpn-exclusive BEGIN（陈 2026-11-15 21:40 定）-->
 ## 梯子和 Tailscale 互斥：别设计依赖梯子的常规流程
 

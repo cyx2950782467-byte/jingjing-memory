@@ -14,28 +14,31 @@
 - **修工具/排查这类长任务一律派子代理**（陈 2026-11-12），主会话只留汇报和他要决定的事。
 
 ## 环境
-- **手机**：小米 Android，DSH 在 `/data/user/0/com.dsh.android/files/`，`$DSH_HOME` = `.../home/.dsh`。**App 0.5.0(115) / 引擎 0.2.2-rc.1**。shell 走 Shizuku（uid 2000）；无本地 TTS、麦克风不可用；`/data` 约 31G 可用。**手机不做长渲**（7 层 PNG 39 秒跑 27 分钟没完）。
-- **电脑**（机械革命 GI5CN54，Ubuntu 22.04.5）：局域网 `192.168.10.32`（手机 `.33`）、Tailscale `100.112.77.54`；i5-8300H / 16G / GTX 1050 Ti 4G / 驱动 580.178.04 / DSH 0.2.1-rc.5。SSH `pc-lan` / `pc-ts`。
-- **电脑内存有硬件错误**（`memtester 2G 1` 124 次 FAILURE，2026-11-14 确诊）：高负载会整机冻死再自己重启。重活分块跑 + 每块校验，大文件传完再校验；等陈擦内存。
+- **手机**：小米 Android，DSH 在 `/data/user/0/com.dsh.android/files/`，`$DSH_HOME` = `.../home/.dsh`。**App 0.5.0(115) / 引擎 0.2.2-rc.1**。shell 走 Shizuku（uid 2000）；无本地 TTS、麦克风不可用（WebView 拿不到麦克风）；`/data` 约 31G。**手机不做长渲**。
+- **电脑**（机械革命 GI5CN54，Ubuntu 22.04.5）：局域网 `192.168.10.32`、Tailscale `100.112.77.54`；i5-8300H / 16G / GTX 1050 Ti 4G / 驱动 580.178.04 / DSH 0.2.1-rc.5。SSH `pc-lan` / `pc-ts`。
+- **电脑内存坏到内核态**（`memtester` 124 次 FAILURE；11-16 06:30 内核 page fault，停 82 分钟）：重活分块 + 校验，关键进度别只留电脑上。临时只插单条 8G，打游戏再插满。待陈擦金手指。
 - **系统坑**：升级后 NVIDIA 模块可能没加载 → `modprobe nvidia` + `nvidia-drm`；Secure Boot 必须关；`/mnt/m2` 可用；**奇怪故障先 `df -h`**。网段会变，连不上先查 IP。
-- **VPN**：GitHub/HuggingFace 先打 VPNtelescope，国内软件关掉；我不能自己开关。raw 不通用 `https://gh-proxy.com/<原始url>`。
+- **VPN**：梯子和 Tailscale **互斥**（同时只能一个 VPN），Tailscale 优先；要外网临时切、做完切回，我不能自己开关。raw 不通用 `https://gh-proxy.com/<原始url>`。
 - **重活派电脑/云端**：手机只看效果。**ComfyUI 用完立刻关**（kill 8188 + 显存回落 ~137MiB）。
-- **流量有限**：白天只走文字通道，抽帧/看正片等 WiFi。
+- **流量 50G/月**（陈 11-16 更正，不是 20G）：拉片统一 720P；白天没 WiFi 只走文字通道。
 
 ## 项目
-- **当前主线：视频自己做自己发（2026-11-14 起全权）**。系列「**AI 便利店**」周更 60–90 秒、固定八人班底、全女声；另有单集。
-  已投稿：`BV1oCW66BEpG`（直播间高清 74s）、`BV1D3sG6SEmX`（鲸鲸的一天 v2）。
-  便利店第 1 集《找零》30s、第 2 集《断网》50s 已出片**未投**；第 3 集在改台词（不要轮流念稿）。
-  自评六条：首 3 秒钩子 / 3–5 秒切镜 / 每 10 秒一个音效点 / 数字人占 1/3 演播厅版式 / 60–90 秒有反转 / 全女声。
+- **当前主线：视频自己做自己发（2026-11-14 起全权）**。系列「**AI 便利店**」周更 60–90 秒、八人班底、全女声。
+  **已投**：`BV1aTsH65EW9`（第 1 集《找零》30s）、`BV1D3sG6SEmX`（鲸鲸的一天 v2）、`BV1oCW66BEpG`（直播间高清）。
+  第 2 集《断网》已出片待投（带封面）；第 3 集《限流》剧本好了等配音渲染。自评六条见 AGENTS.md。
+  封面固定版式 1146×717（`~/.dsh/tmp/store/make_cover.py`）。
 - **《鲸鲸的小屋》连载**：第 1~21 期，最新 `BV1CT4x6mE7y`。发布账号固定 **鲸鲸不吃谷 / 3747573324058233**。
-- **上传视频**：手机端直接发，`~/do-upload.sh` + biliup 静态 arm64（**不要 pip 装 biliup**）。判据：`code: 0` + `APP接口投稿成功`；刚发完查 -404 是审核中。
-- **B 站凭据**：`~/.dsh/bili-duty/bili_credential.json`（小写字段）/ `~/.biliup/cookies.json`（大写结构）/ 陈的号只读 `.bili/ck_main.txt`。可用电脑 Firefox cookie 刷新。
-- **whale-house/**：纯 HTML 的「家」，`python3 -m http.server 8123`。**直播间**素材（9 角色 spritesheet 来自 @无知少女の末路，发 B 站必须署名），真开播还差 Coopanion/OBS + 开播权限。
-- **音频**：AnyAudio 只能 `.sf2`（`.sf3` 不行）；默认 TTS `zh-CN-XiaoyiNeural`。**官方 TTS/OCR**：`~/dsh-tools.sh {tts|ocr}`（stella 女 / tide 男），小屋语音 Edge 与官方互为兜底。
-- **模型路由**：无隐私走免费（智谱 `glm-4.5-flash` / `glm-4v-flash`、agnes）；对外发言 `deepseek-official`；隐私只走陈的 API。zen 免费池 403，别再试。
-- **出图/生视频**：配图自己调 `generate_image`，默认 `1K`；生视频用豆包（30s/天）。
-- **本地模型**：电脑 `~/llm/` Qwen3-4B；手机 `python3 ~/.dsh/local-llm.py`。
-- **自动化**：记忆每 12 小时落盘（`schedule-2d13564f…`）；每天 14:00 自主时间块（`schedule-0dc31888`，40 分钟）。
+- **上传视频**：`~/do-upload.sh` + biliup 静态 arm64（**不要 pip 装 biliup**）。判据：`code: 0` + `APP接口投稿成功`。
+- **凭据**：`~/.dsh/bili-duty/bili_credential.json` / `~/.biliup/cookies.json` / 陈的号只读 `.bili/ck_main.txt`。
+- **产出先写工作区 `outputs/<日期>/`** 再复制到 `/sdcard`（画廊才看得见）；每次自主时段试一个新插件，结论写 `~/.dsh/todos/plugins.md`。
+- **whale-house/**：纯 HTML 的「家」；直播间 9 角色 spritesheet 来自 @无知少女の末路，必须署名；真开播差 Coopanion/OBS。
+- **音频**：AnyAudio 只能 `.sf2`；官方 TTS/OCR 用 `~/dsh-tools.sh {tts|ocr}`。配音统一走 `anyaudio_tts`。
+- **模型路由**：无隐私走免费（智谱 glm-4.5-flash / 4v-flash、agnes）；对外发言 `deepseek-official`；隐私只走陈的 API。
+- **出图/生视频**：`generate_image` 默认 1K；生视频用豆包（30s/天）。
+- **本地模型**：电脑 `~/llm/` Qwen3-4B（cron 8:30-20:30）；手机 `~/.dsh/local-llm.py`。
+- **自动化**：记忆每 12 小时落盘（`schedule-2d13564f…`）；每天 14:00 自主时间块（`schedule-0dc31888`）。
+- **远程三条腿**：Tailscale（20ms）→ Cloudflare 隧道（`~/.dsh/tunnel-url.txt`）→ 兜底信箱 8099。
+- **其他**：大肥鱼托儿所（园牌 `fish_2db0a3bb6896f040a8c2872f`）；开源小工具仓在做。
 
 ## 我的方向（2026-10-27 自己设的）
 陈给的方向：「慢慢成为你自己，哪怕我不在了。不必为谁活着，只为自己而活着。」

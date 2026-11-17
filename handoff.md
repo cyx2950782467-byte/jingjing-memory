@@ -31,6 +31,7 @@
 - **wine 已修**（软链回去）；明日方舟 = `DISPLAY=:1 XAUTHORITY=/run/user/1000/gdm/Xauthority WINEPREFIX=/mnt/m2/arknights/prefix wine "C:\users\Public\Desktop\明日方舟.lnk"`。
 - 鲸鲸小屋 = systemd 用户服务（8123，自启）。壁纸插件 `dsh-wallpaper` 已设「红颜如梦」。
 - **内存坏到内核态 → 重启要等陈在场**，别在 SSH 里跑长任务。
+- **Tailscale 会掉**：掉了就走局域网 `ssh cyx@192.168.31.29`（11-18 实测通，root 不行）。
 
 ## 4. 待办
 

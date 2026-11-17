@@ -45,3 +45,38 @@
 - **睡袋**：陈手上有彩蝶 700，又加了一条（11-16 晚买的，两条拼/套着用）。
 - **重复投稿事故根因**：自主时段 14:02 发了第 2 集，主会话 20:51 又发一次——主会话没读 handoff 就发。
   已建 `publish-log.md` + AGENTS 规矩：发前读台账+handoff，发完补一行。
+
+## 2026-11-17 深夜 · 24.04 升级事故现状（明天从这里接）
+- **系统已经能用**：24.04 起来了、桌面正常、外屏不亮（NVIDIA 驱动在升级中被换掉，待装 noble 版 580）
+- **DPKG 半装状态已修**：`dpkg --configure -a` 跑完，只剩 tlp / tlp-rdw 报错（不影响使用）
+- **根因链**：升级被中断 → dpkg 半装 → 6.8 initrd 里缺东西 → 重启掉 initramfs
+- **现在卡在**：`ssh.socket` 启动失败（`Job failed`），22 端口拒连；GUI「远程登录」开关已开但仍然失败
+- **明天第一步**（要 root，一条命令）：
+  ```
+  pkexec sh -c "ssh-keygen -A; systemctl enable --now ssh"
+  ```
+  如果还不行，看 `pkexec systemctl status ssh.socket -l --no-pager`
+- **教训**：修 SSH 时让陈在终端敲了近一小时，最后发现 GUI 有开关。**已写规矩：排障先找图形界面**。
+- **待办**：① 修 ssh ② 重装 nvidia 580（noble 版）让外屏回来 ③ 把 grub 默认改回 6.8 ④ DSH 网页那个 404
+
+## 2026-11-17 23:46 · SSH 卡在 socket 绑定（明天一条命令收尾）
+- 症状：`ssh.socket` 启动报 `Failed to create listening socket (100.112.77.54:22): Address already in use`
+- 但 `sudo ss -tlnp | grep :22` **没有任何输出** → 没有可见进程占用，像是 systemd 侧残留/绑定到不存在的地址
+- 已做：`ssh-keygen -A`（成功）、`reset-failed/start ssh.socket`（失败）、GNOME 远程登录开关（开→关→开，3389 正常、22 不通）
+- **明天第一步**：读 `systemctl cat ssh.socket` 看 `ListenStream` 是不是被写死成 `100.112.77.54:22`；
+  是的话加 drop-in 改成 `ListenStream=22`（所有地址），再 `daemon-reload` + `restart ssh.socket`
+- 备选：直接走 RDP（3389 已通），但需要图形客户端，暂不用
+- ⚠️ 陈眼睛很累（每天靠眼药水/眼膏），**今晚不再让他敲任何东西**
+
+## 2026-11-17 深夜 · 电脑已救回来（结果+剩两件）
+**已修好**（都可复核）：
+- 24.04.5 + 6.8.0-149 正常启动，`dpkg` 半装包 **0**（tlp/tlp-rdw 已 purge）
+- **SSH 恢复**：根因是 `ssh.socket` 死绑在 Tailscale 地址且起不来 → 停用 socket、启用 `ssh.service` 即通
+- 已禁用 `~/.config/autostart/harness.desktop`（它会另起一个 dsh web 抢 3080）
+- grub 恢复：默认 6.8、去掉 `pci=disable_devices=01:00.0`（那是之前为了稳定禁掉显卡的）
+
+**还没好的两件**：
+1. **显卡**：`modprobe nvidia` → `Key was rejected by service`，**Secure Boot 处于 enabled**
+   （DKMS 自编译模块没签名）。要在 BIOS 关 Secure Boot，或走 MOK 注册。**只有陈能做（BIOS/重启确认）**。
+2. **DSH 网页 400**：`/` 首次 303 发 cookie，带 cookie 再访问仍 400；cookie 属性 `Path=/ HttpOnly SameSite=Strict`（无 Secure）。
+   `/api/version` 返回 404 not found。已排除：双实例、public-url、trusted-host。明天继续（可能要读 dsh-host-webserver 的 400 分支）。

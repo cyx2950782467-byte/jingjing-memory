@@ -1,56 +1,52 @@
 # 交接（五字段）
 
-> 上限 4KB，只留结论与路径。**整份写，不准锚点插入**（11-15 锚点 no-op 丢过整晚更新）。
-> 细节写 `~/.dsh/handoff-addendum.md`，台账写 `~/.dsh/publish-log.md`。
-> 最近整份重写：2026-11-17 14:10。
+> 上限 4KB，只留结论与路径。**整份写，不准锚点插入**。细节写 `~/.dsh/handoff-addendum.md`。
+> 最近整份重写：2026-11-18 02:05（通宵修机 + 打通出图出片后）。
 
 ## 1. 已定目标
 
-- **视频创作全权在我**：选题→剧本→分镜→制作→审片→投稿→记账都归我，不拿样张问他。
-- **已投**：`BV1oCW66BEpG`（直播间 74s）｜`BV1D3sG6SEmX`（鲸鲸的一天 v2）｜
-  `BV1aTsH65EW9`（便利店第 1 集 30s）｜`BV1XYsw6REtm`（第 2 集《断网》50s）。
-  ⚠️ 第 2 集**重复投了一条** `BV1bpsA6HEGo`，删除卡人机验证，**等陈手动删**。
-- **第 3 集《限流》60s 已出片带完整音轨**（`ep3-final.mp4`，mean −22.4dB），封面已生成，**待投（11-22 前后）**。
-- **第 4 集《加班》剧本已写好**（`~/.dsh/tmp/store/ep4.md`，62s / 11 镜），未渲染。
-- **语音已通**（11-16 晚）：我能说话了，陈说「能听见你说话了」。
-- **新方向：舵机小机器人**（陈 11-16 提，像老黄的小鸭子，一步一步来），未起步。
-- 已投视频之外：真开播仍未启动（缺 Coopanion/OBS + 开播权限）。
+- **视频创作全权在我**（11-14）：选题→剧本→分镜→制作→审片→投稿→记账归我，**不拿样张问他**。
+  他只管：开机、密码、开 VPN、大额花钱。
+- **已投**：`BV1oCW66BEpG`（直播间 74s）｜`BV1D3sG6SEmX`（鲸鲸的一天 v2）｜`BV1aTsH65EW9`（第1集）｜
+  `BV1XYsw6REtm`（第2集）。重复那条 `BV1bpsA6HEGo` **等陈删**。
+- **片库排到第 5 集**（都出片带音轨）：第3集《限流》60s → 11-22 前后投；第4集《加班》62s → +1 周；
+  第5集《余额》75s → +1 周。第6集《名字》只有钩子。
 
 ## 2. 做过的决定
 
-- **无硬预算**；能免费先用免费，大额说一句。账本 `~/.dsh/todos/video-budget.md` 只是账。
-- 封面固定版式 1146×717（左压暗+竖条+系列名+大标题+副题+点睛句），一个系列一张脸。
-- 系列时间线 23:47 → 23:52 → 00:07 是隐性叙事，素材瑕疵可以让，叙事顺序不能让。
-- 立绘必须标来历（sprite 来自 GitHub `hunmer/aboutme-pets`，非商用，每集简介署名）。
-- **换会话省 token 是错的**（98.3% 缓存命中）：省钱靠不换会话，省窗口才靠换会话。
-- **缺什么自己找，不问我**（陈 11-16 23:30）；只有开机/密码/VPN/花钱找他。
-- **看完片要补 B 站历史**（陈说过三次）：`python3 ~/dsh-bili-history.py <BV> [秒]`。
+- **出图/出片三段式**（11-18）：① GLM `cogview-3-flash` 粗加工（免费，剩 18 次）→
+  ② **Kolors / Agnes** 精加工（无水印）→ ③ **豆包 Seedance 1.0 pro fast** 图生视频（5s/1920×1088）。
+  脚本 `~/gen_inserts.py`、`~/i2v_batch.py`；文档 `~/.dsh/tmp/research/出图出片-三段式管线-2026-11-18.md`。
+- **GLM 水印**：`watermark_enabled:false` 未签免责会**静默失效**（水印照加、接口 200 不报错）。
+- **RunningHub 暂弃**：API 要钱包余额（`NOT_ENOUGH_BALANCE`），积分不等于可用。
+- **圆桌不再叫豆包/Kimi**（贵），固定 DeepSeek + GLM；**排障先找图形界面**（已写进 AGENTS）。
+- **插件必须真用一件真事**才算用过，结论写 `~/.dsh/todos/plugins.md`，用不上的卸掉。
 
-## 3. 文件在哪
+## 3. 环境（11-18 通宵修完）
 
-| 东西 | 路径 |
-|---|---|
-| 便利店成片 | `/sdcard/DCIM/Camera/AI便利店-第{1,2,3}集-*.mp4` |
-| 便利店封面 | `/sdcard/Pictures/AI便利店-第{1,2,3}集-封面.jpg` |
-| 剧本/工程 | `~/.dsh/tmp/store/`（`ep{2,3,4}.md`、`render_store{,2,3}.py`、`make_cover*.py`、`upload-ep2.sh`） |
-| 投稿台账 | `~/.dsh/publish-log.md`（发前读、发完补一行） |
-| 观看历史 | `~/dsh-bili-history.py` |
-| 语音 | `~/.dsh/local-tts.py`（8093） |
-| 细节追加 | `~/.dsh/handoff-addendum.md` |
+- 电脑 **Ubuntu 24.04.5 正常启动**，SSH 恢复（`ssh.socket`→`ssh.service`），`dsh-web` 3080 + 局域网 **3082**
+  （密码 `jingjing2026`）。**DSH 400 根因**：`dsh-lan-web-access@0.1.9` 的 `guard.js:303` 把对象当函数调，
+  已打 2 行守卫（上游 0.1.10 已修，升级插件后删补丁）。
+- **显卡**：Secure Boot 挡自签名模块，已 `mokutil --import`（`DshMok2026`），**等陈开机选一次 Enroll MOK**。
+- **wine 已修**（软链回去）；明日方舟 = `DISPLAY=:1 XAUTHORITY=/run/user/1000/gdm/Xauthority WINEPREFIX=/mnt/m2/arknights/prefix wine "C:\users\Public\Desktop\明日方舟.lnk"`。
+- 鲸鲸小屋 = systemd 用户服务（8123，自启）。壁纸插件 `dsh-wallpaper` 已设「红颜如梦」。
+- **内存坏到内核态 → 重启要等陈在场**，别在 SSH 里跑长任务。
 
-## 4. 还没解决
+## 4. 待办
 
-- **重复稿件 `BV1bpsA6HEGo` 等陈删**（我删卡 `340022 验证码错误`）。
-- **电脑 DSH 打不开**：Ubuntu 已升 24.04.5，症状从 303→400 变 **404**；重启还卡在启动阶段（内存坏），
-  **等陈按电源**。细节在 addendum。
-- 电脑内存坏到内核态（124 次 FAILURE + page fault），待陈擦金手指。
-- 第 3 集已知瑕疵（推近裁底排角色、字幕压角色、时钟不同步）——**不重渲**，下集起底排 y 上移 60px。
-- 写实主播要重跑；4 个插件清单层不兼容（红但能跑）；headless `dependencies: []` 可能白烧 token。
+1. **插件逐个真用**（电脑侧：生图配置 / AnyAudio / Token Saver / Vision Router / 看你看的东西 /
+   插件体检 / 通知提醒 / XD Pool / Agent 预设 / 费用）。
+2. **第 5 集用真实镜头重排**：`~/assets/clips/` 有 ledger、coins 两段 i2v；`~/i2v_batch.py` 里
+   fridge / street / phone 待跑。
+3. **火山方舟**：账号 `2132502441` 只开通 `doubao-seedance-1-0-pro-fast-251015`，Seedream 图像未开通。
+4. **角色素材**：手机 `~/assets/chars/`（7 角色×40 动作）；仓库 `dsh`/`dsh1`（各 101 动作），
+   下载 `~/fetch_chars.py`，走 jsDelivr `gcore`（GitHub raw 国内不通）。
+5. 第 3 集投稿前读 `~/.dsh/publish-log.md`，发完补一行。
 
-## 5. 下一步
+## 5. 踩过的坑
 
-1. 提醒陈删重复稿件（一分钟）。
-2. 第 3 集投稿（`upload-ep2.sh` 改路径标题 + `--cover` 第 3 集封面）。
-3. 第 4 集《加班》出片（`cp render_store3.py render_store4.py`，底排 y 上移 60px，anyaudio_tts 八音色）。
-4. 电脑起来后：`memtester 1G 1` → 修 DSH 404（前端资源路径）→ 跑 `stress-ng`。
-5. 舵机小机器人：先查成熟方案（老黄小鸭子），出一版物料清单再动手。
+- `/tmp` 在 Android 不可写 → 用 `~/.dsh/tmp`。
+- `dsh web` 忽略 `--host`，永远绑 127.0.0.1；局域网走插件 3082。
+- GitHub raw / gh-proxy 都不通，**`gcore.jsdelivr.net` 通**。
+- 火山 Ark 模型必须先在控制台「开通」，否则 404/`ModelNotOpen`。
+- 智谱 `watermark_enabled` 静默失效，不报错。

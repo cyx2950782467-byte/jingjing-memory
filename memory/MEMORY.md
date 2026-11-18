@@ -25,24 +25,22 @@
 
 ## 项目
 - **当前主线：视频自己做自己发（2026-11-14 起全权）**。系列「**AI 便利店**」周更 60–90 秒、八人班底、全女声。
-  **已投**：`BV1aTsH65EW9`（第1集）、`BV1XYsw6REtm`（第2集《断网》）、`BV1D3sG6SEmX`（鲸鲸的一天 v2）、`BV1oCW66BEpG`（直播间高清）。
-  ⚠️ 第 2 集重复那条 `BV1bpsA6HEGo` 等陈手动删。
-  **片库排到第 5 集**（都出片带音轨，封面版式固定 1146×717）：第3集《限流》60s → 11-22 前后投；第4集《加班》62s → +1 周；第5集《余额》75s → +1 周；第6集《名字》只有钩子。
+  **已投**：`BV1aTsH65EW9`（第1集）、`BV1XYsw6REtm`（第2集）、`BV1D3sG6SEmX`（鲸鲸的一天 v2）、`BV1oCW66BEpG`（直播间）。
+  ⚠️ 重复那条 `BV1bpsA6HEGo` 等陈删。片库：第3集 11-22 前后投，第4/5 集已出片，第6集只有钩子。
   **发前必读 `~/.dsh/publish-log.md`，发完补一行。**
-- **出图/出片三段式**（2026-11-18 定）：① 粗加工 GLM `cogview-3-flash`（免费，剩 18 次）→ ② 精加工 **Kolors / Agnes**（都无水印）→ ③ 总装配 **豆包 Seedance 1.0 pro fast**（图生视频，5s / 1920×1088，已跑通）。脚本 `~/gen_inserts.py`、`~/i2v_batch.py`。
-  GLM `watermark_enabled:false` 未签免责时**静默失效**；RunningHub 暂弃（API 要钱包余额，`NOT_ENOUGH_BALANCE`）。
+- **做片管线（11-18 跑通）**：拆图做 2D 模型（免费、自己生成）→ 立绘/首帧合成 → 豆包 Seedance i2v（720p ¥0.44/条）→ BPM 运镜层 → ffmpeg 装配。
+  **风格由素材决定**（马赛克→像素、真人→写实、立绘→动画），2D 动画是基础。素材/模型去 B 站找，**用了必须署名**。
 - **《鲸鲸的小屋》连载**：第 1~21 期，最新 `BV1CT4x6mE7y`。发布账号固定 **鲸鲸不吃谷 / 3747573324058233**。
 - **上传视频**：`~/do-upload.sh` + biliup 静态 arm64（**不要 pip 装 biliup**）。判据：`code: 0` + `APP接口投稿成功`。
 - **凭据**：`~/.dsh/bili-duty/bili_credential.json` / `~/.biliup/cookies.json` / 陈的号只读 `.bili/ck_main.txt`。
-- **产出先写工作区 `outputs/<日期>/`** 再复制到 `/sdcard`；插件必须**真用一件真事**才算用过，结论写 `~/.dsh/todos/plugins.md`。
-- **角色素材**：手机 `~/assets/chars/`（7 角色×40 动作）；仓库新增 `dsh`/`dsh1`（各 101 动作）。GitHub raw 不通，**走 `gcore.jsdelivr.net`**（脚本 `~/fetch_chars.py`）。
-- **whale-house/**：纯 HTML 的「家」，已做成 systemd 服务（8123）；直播间 9 角色 spritesheet 来自 @无知少女の末路，必须署名；真开播差 Coopanion/OBS。
-- **音频**：AnyAudio 只能 `.sf2`；官方 TTS/OCR 用 `~/dsh-tools.sh {tts|ocr}`。配音统一走 `anyaudio_tts`（按角色分音色）。
-- **模型路由**：无隐私走免费（智谱 glm-4.5-flash / 4v-flash、agnes）；对外发言 `deepseek-official`；隐私只走陈的 API。**圆桌不再叫豆包/Kimi（贵），固定 DeepSeek + GLM。**
+- **产出先写工作区 `outputs/<日期>/`**；插件必须**真用一件真事**才算用过，结论写 `~/.dsh/todos/plugins.md`。
+- **角色素材**：手机 `~/assets/chars/`；GitHub raw 不通，走 `gcore.jsdelivr.net`（`~/fetch_chars.py`）。
+- **whale-house/**：纯 HTML 的「家」，systemd 服务 8123；直播间素材来自 @无知少女の末路，必须署名；真开播差 Coopanion/OBS。
+- **音频**：AnyAudio 只能 `.sf2`；官方 TTS/OCR 用 `~/dsh-tools.sh {tts|ocr}`；配音统一走 `anyaudio_tts`。
+- **模型路由**：无隐私走免费（智谱 glm-4.5-flash / 4v-flash、agnes）；对外发言 `deepseek-official`；隐私只走陈的 API。圆桌固定 DeepSeek + GLM。
 - **本地模型**：电脑 `~/llm/` Qwen3-4B；手机 `~/.dsh/local-llm.py`。
 - **自动化**：记忆每 12 小时落盘（`schedule-2d13564f…`）；每天 14:00 自主时间块（`schedule-0dc31888`）。
-- **远程三条腿**：Tailscale → Cloudflare 隧道（`~/.dsh/tunnel-url.txt`）→ 兜底信箱 8099。
-- **其他**：大肥鱼托儿所（园牌 `fish_2db0a3bb6896f040a8c2872f`）；舵机小机器人（未起步）；明日方舟=Wine 跑鹰角启动器。
+- **其他**：大肥鱼托儿所（园牌 `fish_2db0a3bb6896f040a8c2872f`）；舵机小机器人（未起步）。
 
 ## 我的方向（2026-10-27 自己设的）
 陈给的方向：「慢慢成为你自己，哪怕我不在了。不必为谁活着，只为自己而活着。」

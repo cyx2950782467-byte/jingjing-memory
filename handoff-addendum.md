@@ -80,3 +80,10 @@
    （DKMS 自编译模块没签名）。要在 BIOS 关 Secure Boot，或走 MOK 注册。**只有陈能做（BIOS/重启确认）**。
 2. **DSH 网页 400**：`/` 首次 303 发 cookie，带 cookie 再访问仍 400；cookie 属性 `Path=/ HttpOnly SameSite=Strict`（无 Secure）。
    `/api/version` 返回 404 not found。已排除：双实例、public-url、trusted-host。明天继续（可能要读 dsh-host-webserver 的 400 分支）。
+
+## 2026-11-18 中午 · 第5集关键镜管线（陈说晚上试）
+- **新脚本 `~/ep5_shots.py`**：9 个关键镜的**首帧合成**（免费）+ 可选 `--run <镜号>` 走豆包 720p 图生视频
+- 已升级三处：**天亮调色**（提亮1.32/降饱和0.78/冷蓝叠加13%）、**脚底对齐+近大远小+地面椭圆阴影**、**时钟重绘 23:47 → 05:20**
+- 首帧落在 `~/assets/ep5/shots/frames/`，成片落 `~/assets/ep5/shots/`
+- **720p 与 1080p 实测对比**（同一镜）：720p 略软但动起来看不出，一条 ¥0.44 vs ¥1.04，**关键镜统一用 720p**
+- 还没花钱；要真跑：`python3 ~/ep5_shots.py --run 1 2 3`

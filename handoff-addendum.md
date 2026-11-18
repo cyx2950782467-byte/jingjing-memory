@@ -87,3 +87,182 @@
 - 首帧落在 `~/assets/ep5/shots/frames/`，成片落 `~/assets/ep5/shots/`
 - **720p 与 1080p 实测对比**（同一镜）：720p 略软但动起来看不出，一条 ¥0.44 vs ¥1.04，**关键镜统一用 720p**
 - 还没花钱；要真跑：`python3 ~/ep5_shots.py --run 1 2 3`
+
+## 2026-11-18 21:20–23:30 明日方舟打不开（未修好，明天接着弄）
+
+**现象**：启动器能开、能加载公告；点「开始游戏」后 `Games.exe` 起来但卡住，
+`Arknights.exe` 从不启动。进程列表里始终只有 Launcher 和 Games.exe。
+
+**时间线（关键）**
+- 11-16 22:42 = 游戏最后一次成功启动（`games/Arknights/eld_Arknights.db` mtime）
+- 11-18 21:13 开机，**NVIDIA 私有驱动首次生效**（11-18 通宵那次 Enroll MOK，580.178.04）
+- 11-17/18 有一次 `apt-get install -y --reinstall wine64 wine32:i386`，把 64 位 wine
+  **从 WineHQ staging 10.6 换成了 Ubuntu 官方 9.0**，而 32 位 `wine-staging-i386:i386 10.6` 还在 → **混装**
+
+**抓到的错误**
+- `err:wininet:open_http_connection create_netconn failed: 12029`（连接失败）
+- 禁 wine 内 IPv6 后 12029 消失，但游戏仍然不起
+- `WINEDEBUG=+wininet` 显示它在连 `http://ocsp.digicert.com/...`（证书吊销检查），国内接不通
+- 试过禁 `CertificateRevocation=0`（HKCU Internet Settings）→ 仍不起
+
+**试过、无效**
+1. 禁 wine IPv6（Tcpip6 DisabledComponents=0xff）
+2. 禁证书吊销检查（CertificateRevocation=0）
+3. `QTWEBENGINE_CHROMIUM_FLAGS="--disable-gpu"`
+4. 直接 wine64 跑 exe（exit 222 静默，是因为裸跑没参数）
+
+**意外收获（可复用）**
+- **wine 把弹窗丢到屏幕外**：登录框 `Form - 鹰角启动器` 内容画在窗口右半边外面，
+  用 `xdotool windowmove <win> -420 120` 挪回屏幕就可见可操作。
+  同理 Games.exe 的主窗口是 `1x1+0+0` 的 unmapped 窗口。
+- 用 `xwininfo -root -children | grep games.exe` 能看到所有 wine 子窗口及其实际几何。
+- 启动器登录状态是持久化的（`Cache/Config` MMKV），重启不丢。
+- `pkill -f "Hypergryph Launcher"` 会匹配到自己的 ssh 命令行（自杀），要用 `wineserver -k`。
+
+**下一步（明天白天做）**
+1. 把 64 位 wine 换回 WineHQ staging 10.6：
+   - `winehq-focal.sources` 在（`Architectures: amd64 i386`），源可达（HTTP 200）
+   - 但 `apt-get -s install winehq-staging:amd64` / `wine-staging:amd64=10.6~focal-1`
+     **都只解析成 i386**，amd64 的 deb 包名没定位到 → 需要手动从 dl.winehq.org 下 deb 再 `dpkg -i`
+   - 或改用 winehq 的 noble 源（24.04 对应 noble，不是 focal）
+2. 备选：给 32 位也统一到 9.0（卸 `wine-staging-i386`），看是否反而能跑
+3. 备选：确认 `ntlm_auth` 缺失是否影响（`sudo apt install winbind`）
+
+### 22:00–00:50 继续排查（有 sudo 后）
+
+**又修好三个真问题，但游戏还是不起**
+1. **ntlm_auth 缺失** → `sudo apt install winbind` 装上，wininet 12029 消失
+2. **DPI 被 NVIDIA 读错** → `xrandr --dpi 96`，屏幕物理尺寸从 160×90mm（≈304 DPI）
+   变成正确的 508×285mm（96 DPI）。这是窗口被算成 1×1 的真正原因。
+3. **wine 32/64 混装** → `apt remove wine-staging-i386:i386`（只卸这一个，无连带），
+   系统统一到官方 9.0
+
+**现在的状态**：启动器完全正常（界面、公告、登录全对），点「开始游戏」后
+`Games.exe` 起来但**不启动 Arknights.exe**，`la.log` 里零错误、游戏目录无改动、
+`HGEventLog` 无明文。**就是那一刻静默断掉。**
+
+**判断**：prefix 被 11-17/18 两次 wine 版本变更搞脏了（`.update-timestamp` 01:55）。
+干净起步要 `wineboot -u` 重新初始化，或重建 prefix + 重装游戏（29G）。
+
+**已备份**：无。重建 prefix 前先 `cp -r` 到 `/mnt/m2/arknights/prefix.bak`（29G 空间够，剩余 33G）。
+
+**apt 源注意**：winehq-focal 源里 amd64 的 wine-staging 已不存在（WineHQ 停更 focal），
+只有 i386。要装新版 staging 得换 noble 源。
+
+### 01:00–01:25 最后一轮（sudo 后）
+
+**又补了两个缺失，仍未起来**
+4. **`wine` 元包根本没装** → `/usr/bin/` 下没有 `wineboot`/`winecfg`/`wine` 任何命令，
+   只有 `wine64` 包给的 `/usr/lib/wine/wine64`。启动游戏那一步要调 `wineboot`，
+   找不到就静默失败。（`/usr/local/bin/wine` 是我早先手动软链的，已删）
+   → `sudo apt install -y wine` 补齐（现在 /usr/bin/wine* 齐全）
+5. **gstreamer 解码器缺失** → 装 `gstreamer1.0-plugins-{base,good,bad,ugly}` + `libav`
+
+**当前残留错误**：`winegstreamer.dll` DllGetClassObject 0x80040111（装了 gstreamer 仍有，
+但不致命）+ 偶发 wininet 12029。
+
+**结论**：启动器完全正常，点「开始游戏」后 `Games.exe` 起来、**不启动 Arknights.exe**、
+零错误、游戏目录无改动。已排除：显卡、DPI、wine 版本、命令缺失、认证库、解码器。
+
+**下一步（明天）**：
+1. 新建干净 prefix 测试：`WINEPREFIX=~/test-prefix wineboot -i` 然后装启动器试，
+   能起游戏说明是旧 prefix 脏了 → 重建 `/mnt/m2/arknights/prefix`
+2. 备选：换 winehq **noble** 源装最新 staging（11.x）
+3. 备选：重装客户端（陈已同意下载）
+
+## 2026-11-18 夜 · 状态快照（收工前）
+**电脑**：已开机在线（`ssh cyx@192.168.31.29`）。体检：显卡驱动好了（MOK 生效，1050 Ti/580.178.04）、本次启动硬件报错 0 行、半装包 0。
+⚠️ **内存仍是 8G 英睿达(坏) + 8G 金士顿**，陈说过两天换 4+8。这两天别在电脑上跑重活。
+**DSH 网页**：`127.0.0.1:3080` 的 token 现在 401（坏的）；**改用 `http://192.168.31.29:3082`（密码 jingjing2026）**，实测 200。
+**Blender 没装** → bpy 验证等内存换完再装。
+
+**今天做完的**
+1. 第 5 集 9 个关键镜 720p 全部出片（¥3.92，余额约 ¥8），串联成 `outputs/2026-11-18/第5集-九镜串联demo.mp4`（24.75s）
+   - 发现两个 i2v 通病：① 画面里的文字（时钟）会被模型改写 ② 人数不可控
+   - 修法已定：生成前把时钟区域涂成纯色→后期按运镜贴回；人数在剪辑层叠，不交给模型
+2. `~/ep5_render.py`：静帧+角色呼吸+BPM 运镜 → 零成本"会动的镜头"（实测帧间 4.4% 像素变化）
+3. `~/shot-planner.py` + `~/render_move.py`：BPM→小节线→机位→出片（132BPM → 2.727s/镜）
+4. `~/vsync_mouth.py`：TTS 音频驱动口型（**嘴还难看，明天重做**：要拆上下唇，不是画椭圆）
+5. 鲸鲸小屋**日记墙**：`~/house-diary.py` + `diary.jsonl`，已同步到电脑 8123；今天第一笔已记
+6. 规矩写进 AGENTS：定时任务投 `new_once`、工具三层阶梯、产出必须进 Download+相册
+
+**挂着的**
+- 嘴型重做（拆上下唇 + 音频驱动）
+- 第 5 集装配：配音 + BGM 踩点 + 字幕
+- 每日自主时间块尾部加"记日记"一步
+- 5 个子代理调研结果要汇总成一张表（仓颉/sakiko/dsh-chief/SDXL/眼镜）
+
+### 01:30–03:25 重建容器（陈给密码后）
+
+**做了什么**
+1. `wineboot -u` 更新旧容器 → 无效
+2. **重建**：`mv prefix prefix.old-20261119`（旧容器保留，1.7G）
+   → `WINEPREFIX=... wineboot -i` 建新容器（1.3G，win64）
+3. 27G 游戏先 `mv` 到 `games-backup`（同盘瞬时），新容器建好后移回
+   `prefix/drive_c/Program Files/Hypergryph Launcher/games`
+4. 用 `/mnt/m2/arknights/HypergryphLauncher.exe` 重装启动器（268M，安装程序
+   要勾「我已阅读并同意」再点「继续」，坐标见下）
+5. 恢复 `Cache`（登录凭证不在里面，仍需重登）
+
+**新结果**
+- 新容器：启动器界面正常、能识别游戏、**但登录框渲染失败**（全黑，只画出输入框轮廓，
+  键盘/鼠标输入不进、画面完全静止 → 那不是活控件，是渲染残影）
+- 旧容器：登录框正常、能登进去，但点开始游戏游戏不起
+
+**结论**：卡在 `wine 9.0 跑这套 Qt WebEngine 登录界面`。新旧容器表现不同（旧的有早期组件），
+但没有一条路能同时满足「登录」+「起游戏」。
+
+**明天方案（按优先级）**
+1. 换 **WineHQ noble 源** 装 winehq-staging 11.x（24.04 对应 noble，focal 源已停更 amd64）
+2. 或装 **Lutris**（自带多版本 wine 管理，能单独给这个游戏配 prefix）
+3. 回滚：`rm -rf prefix && mv prefix.old-20261119 prefix`（旧容器还能登录）
+
+**可复用的操作坐标**（安装程序窗口 816×578 @ 585,267）
+- 勾同意：(140, 476)｜继续：(408, 521)
+- 启动器「登录」按钮：窗口内 (1035, 63)
+- 登录框 Form 窗口内容画在窗口右半边，要 `xdotool windowmove <win> 66 120` 才可见
+
+### 第5集九镜 · 时钟修补计划（明天做）
+- 起因：i2v 会把画面里的数字重绘，`06_silence` 被改成 05:30、`09_title` 被改成 05:51（看拼图确认过）
+- 修法（不用重跑、不花钱）：**后期贴回**——每条 clip 量出时钟在本镜里的固定位置和尺寸（这几镜基本都是固定机位），
+  用 PIL 在该位置画一块带 05:20 的面板，逐帧覆盖；帧数少（65 帧/镜），手机几秒就完
+- 若某镜是推镜（时钟会变大），再按 camera_path 逐帧算缩放
+- 顺带：**以后生成前先把时钟区域涂成纯色墙**，从源头不给模型可改的素材
+
+## 2026-11-18 23:30 · 给「明天新会话」的交接（陈说会话太长了要换）
+
+### 新会话开工顺序（照这个做，别重新问陈）
+1. 读 `~/.dsh/handoff.md` + 本文件
+2. 电脑上一个环境已经装好但**还没试听**：`mingtts`
+   ```
+   ssh cyx@192.168.31.29
+   source ~/miniconda3/etc/profile.d/conda.sh && conda activate mingtts
+   cd /mnt/m2/models/tts/Ming-3.0-tts-main
+   python infer.py --model_path /mnt/m2/models/tts/Ming-3.0-tts-0.5b \
+     --task FREEFORM --text "五点多，他还没走。" --output /tmp/t1.wav --device cpu --ip 灵小柔
+   ```
+   跑通→听中文自然度→**好用就接成 8 个角色的音色**（内置 28 个中文女声，每个 7 种情绪，不用克隆）
+3. 定了音色，再动数字人：定妆照已选 `~/assets/avatar/02_casual.png`（换装版 `05_edit_uniform.png`）
+
+### 今天定下的方向（别再推翻）
+- **数字人 > Q 版 3D**：陈说「平涂 q 版，桌面上已经跑了三只 fish」。第一周走**照片驱动**（LivePortrait idle + MuseTalk 中文口型），3D 混元那条留作第二步
+- **云卡先不开**：Ming-TTS 在 PC CPU 跑；MuseTalk 4G 就能跑。**触发条件**：① 1050Ti OOM 或 30 秒 >20 分钟 ② 要批量 ③ 电脑又掉线
+- 定妆照**不能用网上真人照片**（肖像权），已用 Kolors 自己生成；平台水印"AI生成"出片时裁掉但**必须自己加显式 AI 标识**
+
+### 环境坑（今天踩的）
+- **别往 ComfyUI 的 conda env 装东西**：我把 Ming-TTS 依赖装进去，torch 被升到 2.6、mpmath 弄坏，transformers 直接导不进来。已修复回 torch 2.4.1 / tv 0.19.1 / mpmath 1.3.0。以后一律独立 env
+- **GitHub 直连不通，但 `gh-proxy.com` 可以**（今天靠它拉了 Ming-TTS 源码 tarball，5.3MB/200）
+- ModelScope 走国内很快（22MB/s，2.96GB 两分半下完）
+- DSH 网页用 **`192.168.31.29:3082`**（密码 jingjing2026），3080 的 token 是 401 坏的
+- 电脑**内存还没换**（8G 英睿达坏条还在），重活别在本地跑
+
+### 今天的产出（都在 `outputs/2026-11-18/`）
+- `第5集-九镜串联demo.mp4`（24.75s，¥3.92）
+- `第5集-会动的镜头demo.mp4`、`第5集-踩点运镜demo.mp4`
+- `工具调研汇总-2026-11-18.md`（六项调研结论）
+- `养鱼手册-给不写代码的人.md`、`养鱼手册2-手机连客户端.md`（给陈朋友的）
+- 鲸鲸小屋日记墙（`~/house-diary.py` + `diary.jsonl`，已同步电脑 8123）
+
+### 待修
+- 第5集两镜时钟被模型改（06_silence=05:30、09_title=05:51）→ 后期贴回计划已写在上面一节
+- 嘴型：`vsync_lips.py` 第二版还是「下巴开洞」，**正解是生成"张嘴"变体做双帧过渡**，不是几何变形

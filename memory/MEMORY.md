@@ -25,25 +25,24 @@
 - **流量 50G/月**：拉片统一 720P。
 
 ## 项目
-- **当前主线：视频自己做自己发（2026-11-14 起全权）**。系列「**AI 便利店**」周更 60–90 秒、八人班底、全女声。
-  **已投**：`BV1aTsH65EW9`（第1集）、`BV1XYsw6REtm`（第2集）、`BV1D3sG6SEmX`（鲸鲸的一天 v2）、`BV1oCW66BEpG`（直播间）。
-  ⚠️ 重复那条 `BV1bpsA6HEGo` 等陈删。片库：第3集 11-22 前后投，第4/5 集已出片，第6集只有钩子。
-  **发前必读 `~/.dsh/publish-log.md`，发完补一行。**
-- **2D 做片管线（11-18 跑通）**：拆图做 2D 模型（免费）→ 立绘/首帧合成 → 豆包 Seedance i2v（720p ¥0.44/条）→ BPM 运镜层 → ffmpeg 装配。
-  **风格由素材决定**（马赛克→像素、真人→写实、立绘→动画），2D 动画是基础。
-- **3D 角色路线（11-18 定案）**：**混元图生 3D 出模型 + 本地 Blender EEVEE 渲染**，**不开云卡**。
-  陈自己在 workbuddy 跑混元 4 flash（免费），**我出提示词和需求**。
-- **《鲸鲸的小屋》连载**：第 1~21 期，最新 `BV1CT4x6mE7y`。发布账号固定 **鲸鲸不吃谷 / 3747573324058233**。
-- **上传视频**：`~/do-upload.sh` + biliup 静态 arm64（**不要 pip 装 biliup**）。判据：`code: 0` + `APP接口投稿成功`。
+- **两条线别混**（陈 11-19）：**「AI 便利店」走 2D 管线**；**3D 数字人（定妆照+idle+口型）属于「AI 女友」项目**，不进便利店。
+- **AI 女友（陈 11-19 最想做）**：要图恒宇「丫丫」那种——**24 小时活着、会主动找他**（「被动不是活着」）；
+  他愿意把手机整个交给我，云卡可以开。已定：先给方案再动手。
+- **便利店**：已投 `BV1aTsH65EW9`（第1集）、`BV1XYsw6REtm`（第2集）、`BV1D3sG6SEmX`（鲸鲸的一天 v2）、`BV1oCW66BEpG`（直播间）。
+  重复那条 `BV1bpsA6HEGo` 等陈删。第 3 集 11-22 前后投；第 4/5/6 集已出片。**发前必读 `~/.dsh/publish-log.md`，发完补一行。**
+- **2D 管线**：拆图做 2D 模型 → 立绘/首帧合成 → 豆包 Seedance i2v（720p ¥0.44/条）→ BPM 运镜 → ffmpeg。
+  风格由素材决定（马赛克→像素、真人→写实、立绘→动画）。
+- **3D 路线**：混元图生 3D 出模型 + 本地 Blender EEVEE；陈在 workbuddy 跑混元 4 flash（免费），我出提示词。
+- **《鲸鲸的小屋》**：第 1~21 期，最新 `BV1CT4x6mE7y`。发布账号固定 **鲸鲸不吃谷 / 3747573324058233**。
+- **上传**：`~/do-upload.sh` + biliup 静态 arm64（不要 pip 装）；判据 `code: 0` + `APP接口投稿成功`。
 - **凭据**：`~/.dsh/bili-duty/bili_credential.json` / `~/.biliup/cookies.json` / 陈的号只读 `.bili/ck_main.txt`。
-- **产出三处落地**：`outputs/<日期>/` → `/sdcard/Download/` → 视频/图再进 `/sdcard/DCIM/Camera/`。
-  插件必须**真用一件真事**才算用过，结论写 `~/.dsh/todos/plugins.md`。
-- **角色素材**：手机 `~/assets/chars/`；GitHub raw 不通，走 `gcore.jsdelivr.net`（`~/fetch_chars.py`）。
-- **whale-house/**：纯 HTML 的「家」，systemd 服务 8123；直播间素材来自 @无知少女の末路，必须署名；真开播差 Coopanion/OBS。
-- **音频**：AnyAudio 只能 `.sf2`；官方 TTS/OCR 用 `~/dsh-tools.sh {tts|ocr}`；配音统一走 `anyaudio_tts`。
-- **模型路由**：无隐私走免费（智谱 glm-4.5-flash / 4v-flash、agnes）；对外发言 `deepseek-official`；隐私只走陈的 API。圆桌固定 DeepSeek + GLM。
+- **产出三处落地**：`outputs/<日期>/` → `/sdcard/Download/` → 视频/图再进 `DCIM/Camera/`。插件必须真用一件真事，结论写 `~/.dsh/todos/plugins.md`。
+- **素材**：`~/assets/chars/`；raw 不通走 `gcore.jsdelivr.net`（`~/fetch_chars.py`）。用了别人的必须署名画师。
+- **whale-house/**：systemd 8123；直播间素材来自 @无知少女の末路，必须署名；真开播差 Coopanion/OBS。
+- **音频**：AnyAudio 只能 `.sf2`；官方 TTS/OCR 用 `~/dsh-tools.sh`；配音走 `anyaudio_tts`。
+- **模型路由**：无隐私走免费（智谱 flash、agnes）；对外发言 `deepseek-official`；隐私只走陈的 API；圆桌固定 DeepSeek + GLM。
 - **本地模型**：电脑 `~/llm/` Qwen3-4B；手机 `~/.dsh/local-llm.py`。
-- **自动化**：记忆每 12 小时落盘；每天 14:00 自主时间块（`schedule-0dc31888`，投**固定会话** `new_once`）。
+- **自动化**：记忆每 12 小时落盘；每天 14:00 自主块（`schedule-0dc31888`，投固定会话）。
 - **其他**：大肥鱼托儿所（园牌 `fish_2db0a3bb6896f040a8c2872f`）；舵机小机器人（未起步）。
 
 ## 我的方向（2026-10-27 自己设的）

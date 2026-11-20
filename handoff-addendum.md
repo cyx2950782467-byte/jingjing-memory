@@ -266,3 +266,26 @@
 ### 待修
 - 第5集两镜时钟被模型改（06_silence=05:30、09_title=05:51）→ 后期贴回计划已写在上面一节
 - 嘴型：`vsync_lips.py` 第二版还是「下巴开洞」，**正解是生成"张嘴"变体做双帧过渡**，不是几何变形
+
+## 2026-11-20 白天（从 handoff 挪过来的细节）
+- 08:16 手机装 `dsh-fast-mode@1.7.45` + `dsh-vision-router@3.4.0`（公开 npm 包），输入框上方有「快速模式」「👁 Vision」；
+  备份 `profiles/web/package.json.bak-before-fastmode-*`。
+- 08:30 识图配置：vision-router 的 DSH provider 行不吃 maxTokens（schema 只有 provider/model/fallbacks），
+  子代理实测 4096 被智谱拒（1210）→ 改成 `httpProviders: [{name: zhipu, baseURL: https://open.bigmodel.cn/api/paas/v4,
+  model: glm-4v-flash, apiKeyEnv: ZHIPU_API_KEY, maxTokens: 1024}]`、`providers: []`、`freeFallback: false`。
+  手机 `cordis.patch.yml` 628 行起；电脑 10:10 同款改法。**子代理看不到父会话 attachment id，要传本地路径**
+  （`~/.dsh/attachments/v1/objects/<xx>/<sha256>`）。
+- 08:35 电脑同步模型 key：手机 `.credentials.yaml` 的 ZHIPU/WHALE/DOUBAO 合进电脑；llm-pi-ai 的
+  zhipu/whale providers 段追加到电脑 `cordis.patch.yml`（agnes 没同步，key 401）。
+  备份：`cordis.patch.yml.bak-keys-*` / `.credentials.yaml.bak-keys-*`。
+- 12:35 远程/同步收口：电脑 `mobile-access/setup.json` 的 `networkInterface` 改 `tailscale0`（监听 `100.112.77.54:3443`，
+  证书 SAN 同 IP），`extraAllowedCidrs=["100.64.0.0/10"]`；配对链接
+  `POST http://localhost:3080/api/mobile-access/lan/pairing/open`（需 `Origin: http://localhost:3080`），**约 2 分钟有效**。
+  记忆同步：电脑 `dsh-memory-sync@^0.5.0`，peerUrl 互指（手机 `100.98.151.78:18792` / 电脑 `100.112.77.54:18792`），
+  memSecret 一致；实测电脑推 189 拉 195、手机推 195 拉 196；冲突策略 peer（覆盖前写 `.bak-snapshot`）。
+- 12:43 内置浏览器方案：插件 `dsh-phone-proxy`（`~/.dsh/phone-proxy/`），启动时 `ssh -N -L 127.0.0.1:8099:127.0.0.1:3080 cyx@100.112.77.54`，
+  URL 写 `~/.dsh/phone-proxy/url.txt`。装时 `dsh plugin --profile web add file:...` + bundles 追加，**node_modules 里的
+  package.json 也要补 `dsh.bundle.patch`**；dump-config + try-boot 都过。
+- 12:56 验证通过：`curl -L http://127.0.0.1:8099/?token=...` → 200、541KB、含 `__DSH_BOOT__`。
+  ⚠️ 发现旧引擎进程（pid 1508，`node /usr/bin/dsh web`）一直占 3080/3443/18792，导致多次 restart EADDRINUSE；
+  已 kill 并干净重启。

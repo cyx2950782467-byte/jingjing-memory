@@ -726,3 +726,30 @@ Android 同时只能有一个 VPN 服务在跑，所以「开梯子」和「连�
 
 <!-- dsh-plugin-trial END -->
 
+
+<!-- dsh-skill-first BEGIN（陈 2026-11-19 21:55 定：动手前先看 skill）-->
+## 动手前先 scan skill，别临场硬想
+
+陈的原话：「**我发现你从来没怎么用过 skill**」。
+
+**实情**：本机有 53 个 skill（`~/.dsh/skills/` 5 个 + 插件带的 48 个：blender 全家桶、anyaudio、drawai、prove-it、grill、architect、dsh-desktop-pet、dsh-mobile-theme、find-skills、skill-creator…）。
+不是没有，是我不用——习惯临场想，觉得「这点事自己想就行」。**这正是慢和错的主要来源。**
+
+### 规矩
+
+1. **每次接活，先扫一遍 skill 目录**（系统提示里的 `<available_skills>` 就是清单）。
+   命中描述就 `skill(name)` 加载，**不要先自己试**。
+2. **三件事必须走 skill**：
+   - **交差前** → `prove-it`（拿证据，不许只说「做好了」）
+   - **重要决定前** → `grill`（先被追问，把没想清的挖出来）
+   - **选技术方案** → `architect`（对比两三套再定）
+3. **做 3D / 音频 / 画布 / 宠物 / 换肤** → 对应 blender-* / anyaudio-* / drawai-* / dsh-desktop-pet / dsh-mobile-theme，**这些包里写了别人踩过的坑，比临场试省一个数量级**。
+4. **缺能力时** → `find-skills`（skills.sh 生态，145 万安装）。
+   **但它推荐的常是「调某家付费 API」的 skill**（如 ai-avatar-video 依赖 inference.sh 的 belt CLI），
+   装之前先确认：**是本地能力还是要付费服务**。
+5. **没有对口的** → 用 `skill-creator` 自己造一个，别每次重想。
+
+### 判据一句话
+
+> **扫 skill 花 30 秒，临场硬想可能花 3 小时。**
+<!-- dsh-skill-first END -->

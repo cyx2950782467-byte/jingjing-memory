@@ -379,3 +379,42 @@
   触发轮跑 web 会话几秒，RUN/ALARM 时 `run-free.sh` 派给 headless 免费 glm（`free-run.log`）。
 - 自主块 `0dc31888` prompt 改派活，target `new_once`（session-453b3723）。
 - 11:30 首投验证 SKIP 正确；11:35 手动派活自测成功（免费 glm 写进日记）。
+
+## 2026-11-21 22:15 主线推进（新会话）
+- **p3 基线**：电脑 `~/pc.sh test` = 88 tests OK。
+- **P3-F1 实验落地**：见 handoff-whale.md 表格新行；证据 `outputs/2026-11-21/p3f1-cgroup-experiment.md`。
+- **第7集《更新》配音已出**：`outputs/2026-11-21/ep7-voice/`（line-01..12.wav + timeline.json），12 条全对槽，最长 68.22s（剧本 70s）。
+- **配音通道坑（重要）**：
+  - SiliconFlow `sf-tts.py` 的 key **402 余额不足**，付费女声全废（anna/bella/claire/diana 均 402）。
+  - 本地 `dsh-local-tts` 8093 可用（`POST /v1/audio/speech`，返回 WAV 24k mono），但 **voice 参数被忽略**：4 个不同女声的 md5 完全相同 → 只能单音色。
+  - 角色区分做法：ffmpeg `asetrate=24000*P,aresample=24000,atempo=1/P`（变音高不变时长），系统音 P=0.94、Qwen 1.06、Gemini 1.08、GLM 0.93、GPT 1.03。超槽再用 `atempo` 收紧（#1→1.485、#3→1.212）。
+  - 脚本留在 `~/.dsh/tmp/gen_ep7_voice.py`、`fix_ep7.py`（临时，可删）。
+
+## 2026-11-21 23:05 收工（陈说停下睡觉）
+**做完**
+- 第7集《更新》**70.000s 成片已出**：`outputs/2026-11-21/AI便利店-第7集-更新-70s-字幕版.mp4`（12 条中文字幕烧入）+ 无字幕母版 + `封面.jpg`（1920×1080），均已进 `/sdcard/DCIM/Camera/` 与 `Download/`。
+- 近景糊的问题**定位并已修**：根因是角色素材源头只有 166×234（webp 原图 576×480），近景放大 1.6~1.8 倍 → 放大 3~4 倍必糊。已把镜 4/6/9/10/7/2/14 的放大压到 0.01~0.035 重渲。
+- **Supervisor**：`~/pc.sh test` = **105 tests OK**（原 88 + 凭据注入 17），`credentials.py`/`test_credentials.py` 已落地两端同步。
+- **cgroup 实验**：unit 内 setsid 派生 8 进程，cgroup 抓 8/8、pgid 仅 1/8，SIGKILL 后全清；坑 `XDG_RUNTIME_DIR=/run/user/1000`。
+- **反查实验（GPT 建议的）**：A 活着可稳定判活；B（自然退出）与 C（从未启动）输出**逐字相同**，12 字段无一可区分。补法：jobstore 存 `InvocationID`（同名复用会变，防 ABA）+ 判活要求 `LoadState=loaded` 且 `cgroup.procs` 非空（`show` 的退出码三场景全 0，不能判存在性）+ 终态由 Worker 自写。证据 `outputs/2026-11-21/p3f3-restart-reclaim-experiment.md`。
+- **碧蓝航线**：`~/assets/azur/` 已下 4 个角色 demo + 902 角色表 + `素材来源.md`；权重包 `neiroha-all-characters.zip` 235MB 手机只有 6.6KB/s，**等 VPN 撤掉走电脑或云主机**。上游还有更新的 V5turbo（2.48GB）与 Irodori LoRA（121MB，推荐先试）。
+
+**卡住没解决**
+- **ChatGPT 发不进去**：`browser type` 对 contenteditable 报 `TypeError: Illegal invocation`；`eval` 连 `return 1+1` 都无返回；`press` 只进单字符且不稳；`shell input tap/text` 打不到，因为内置浏览器 WebView 不在 `screencap` 里（三次截图都是 DSH 聊天界面，`mCurrentFocus` 只有 MainActivity）。
+- 陈说内置浏览器**就在前台**，并用红圈标了屏幕**右上角**那个白色方形图标（约 90% 宽、10% 高），对应 `ui` 里的「打开右侧边栏」按钮。**这条没走通**：先被「更多操作」面板挡住，Escape 后该按钮报「元素存在但不可见/已禁用」，`goto right-sidebar` 也失败（等不到「新建终端」）。
+
+**下次从这里接**
+1. 先修「打开右侧边栏」不可点：`ui where` → 关掉所有面板 → `dump includeHidden` 看该按钮状态；右侧边栏里如果有浏览器页签，就是陈说的入��，进去后可 `shell input tap/text`（英文）。
+2. 或者让陈把 ChatGPT 页面停在屏幕上，我直接 `input tap` + `input text` 打英文正文。
+3. 第7集若要换碧蓝音色，优先 Irodori 121MB LoRA（云上 IndexTTS-2 也可直接拿 demo 当参考音）。
+
+## 2026-11-21 23:35 夜间任务派给电脑（陈睡前定的方案）
+做法：把不需要 VPN 的待办写成 `/home/cyx/night-task.md`（手机同名源 `outputs/2026-11-21/夜间任务-给电脑.md`），在**电脑**上后台跑 headless：
+`nohup dsh --profile headless --permission-mode danger-full-access "$(cat night-task.md)" > /home/cyx/night.log 2>&1 &`
+启动脚本 `/home/cyx/nightstart.sh`（它从 `~/.dsh/.credentials.yaml` 里取 DEEPSEEK_API_KEY 注入环境，**不打印密钥**，只打长度）。
+
+**踩到的坑（重要）**：直接跑 headless 会报
+`MISSING_CREDENTIAL: llm-deepseek: no API key for provider route "deepseek-official"` —— headless 不会自己读 `.credentials.yaml`，**必须在启动环境里 export DEEPSEEK_API_KEY**（或让 web 的 Models 页写进 credentials service）。
+
+**夜间任务三件**：① 豆包出 8 角色 2K 立绘（先 2 个验证，失败≤3 次就停）② Supervisor F2/F3 设计增量文档 ③ 第7集成片技术体检。
+**明早第一件事**：`~/pc.sh sh 'tail -40 /home/cyx/night.log'` 看跑成什么样，再把产出 pull 回来（电脑工作区 `outputs/2026-11-21/`）。

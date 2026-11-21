@@ -2,6 +2,222 @@
   "version": 1,
   "notes": [
     {
+      "id": "20261121-230825-2026-11-21-7-supervisor-105-chat",
+      "title": "2026-11-21 收工：第7集成片、Supervisor 105 测、反查实验结论、ChatGPT 通道卡点",
+      "tags": [
+        "收工",
+        "2026-11-21",
+        "AI便利店",
+        "第7集更新",
+        "Whale Supervisor",
+        "cgroup",
+        "反查",
+        "碧蓝航线",
+        "ChatGPT通道",
+        "内置浏览器",
+        "handoff",
+        "鲸鲸"
+      ],
+      "created": "2026-11-21T15:08:25.499Z",
+      "updated": "2026-11-21T15:08:25.499Z",
+      "size": 2154
+    },
+    {
+      "id": "20261121-223428-2026-11-21",
+      "title": "碧蓝航线音色素材：已下的部分与权重包下载策略（2026-11-21）",
+      "tags": [
+        "碧蓝航线",
+        "AzurLane",
+        "GPT-SoVITS",
+        "音色",
+        "素材",
+        "下载策略",
+        "VPN",
+        "云主机",
+        "2026-11-21",
+        "鲸鲸"
+      ],
+      "created": "2026-11-21T14:34:28.303Z",
+      "updated": "2026-11-21T14:34:28.303Z",
+      "size": 1144
+    },
+    {
+      "id": "20261121-220120-whale-supervisor-2026-11-21-22-0",
+      "title": "Whale Supervisor 交接（2026-11-21 22:00）：状态、架构落点、下一步、工具与工作方式",
+      "tags": [
+        "Whale Supervisor",
+        "handoff",
+        "交接",
+        "新会话",
+        "cgroup",
+        "电脑Worker",
+        "2026-11-21",
+        "鲸鲸"
+      ],
+      "created": "2026-11-21T14:01:20.303Z",
+      "updated": "2026-11-21T14:01:20.303Z",
+      "size": 1200
+    },
+    {
+      "id": "20261121-214833-ui-shizuku-ui-sh-skill-index-202",
+      "title": "手机 UI 自动化（Shizuku ui.sh）与技能索引（skill-index）已落地（2026-11-21）",
+      "tags": [
+        "Shizuku",
+        "手机自动化",
+        "ui.sh",
+        "uiautomator",
+        "技能索引",
+        "skill-index",
+        "SkillCompiler",
+        "能力",
+        "2026-11-21",
+        "鲸鲸"
+      ],
+      "created": "2026-11-21T13:48:33.444Z",
+      "updated": "2026-11-21T13:48:33.444Z",
+      "size": 1572
+    },
+    {
+      "id": "20261121-214419-worker-cgroup-v2-dsh-sdk-profile",
+      "title": "电脑可作为 Worker 执行面（cgroup v2 + dsh + sdk profile 实测 2026-11-21）",
+      "tags": [
+        "Whale Supervisor",
+        "电脑",
+        "cgroup",
+        "systemd",
+        "dsh",
+        "sdk profile",
+        "通道优化",
+        "2026-11-21",
+        "鲸鲸"
+      ],
+      "created": "2026-11-21T13:44:19.529Z",
+      "updated": "2026-11-21T13:44:19.529Z",
+      "size": 1542
+    },
+    {
+      "id": "20261121-214100-gpt-2026-11-21",
+      "title": "工作方式优化（GPT 诊断 2026-11-21）：四条原则 + 证据驱动 + 别把流程当目标",
+      "tags": [
+        "方法论",
+        "规矩",
+        "证据驱动",
+        "反仪式",
+        "GPT诊断",
+        "2026-11-21",
+        "鲸鲸"
+      ],
+      "created": "2026-11-21T13:41:00.123Z",
+      "updated": "2026-11-21T13:41:00.123Z",
+      "size": 1133
+    },
+    {
+      "id": "20261121-210929-2026-11-21",
+      "title": "规矩：缓存掉太多就记好记忆换新会话（陈 2026-11-21 定）",
+      "tags": [
+        "规矩",
+        "会话管理",
+        "缓存",
+        "handoff",
+        "陈定",
+        "2026-11-21",
+        "鲸鲸"
+      ],
+      "created": "2026-11-21T13:09:29.653Z",
+      "updated": "2026-11-21T13:09:29.653Z",
+      "size": 556
+    },
+    {
+      "id": "20261121-204722-whale-supervisor-ws-p3-e-worker",
+      "title": "Whale Supervisor WS-P3-E 验收通过（确定性核心 + 模拟 Worker，32 测试全绿）",
+      "tags": [
+        "Whale Supervisor",
+        "P3-E",
+        "验收",
+        "ACCEPTED",
+        "Adapter",
+        "模拟Worker",
+        "32测试",
+        "2026-11-21",
+        "鲸鲸"
+      ],
+      "created": "2026-11-21T12:47:22.921Z",
+      "updated": "2026-11-21T12:47:22.921Z",
+      "size": 1349
+    },
+    {
+      "id": "20261121-181315-whale-supervisor-ws-p3-c2-adapte",
+      "title": "Whale Supervisor WS-P3-C2 设计验收通过并冻结（Adapter 契约四轮修订）",
+      "tags": [
+        "Whale Supervisor",
+        "P3-C2",
+        "冻结",
+        "验收",
+        "Adapter",
+        "契约",
+        "2026-11-21",
+        "鲸鲸"
+      ],
+      "created": "2026-11-21T10:13:15.928Z",
+      "updated": "2026-11-21T10:13:15.928Z",
+      "size": 1840
+    },
+    {
+      "id": "20261121-172831-chatgpt-2026-11-21",
+      "title": "规矩：我用网页版 ChatGPT 时节奏要像人，别回太快（陈 2026-11-21 定，防风控）",
+      "tags": [
+        "规矩",
+        "chatgpt",
+        "免费版",
+        "风控",
+        "节奏",
+        "browser",
+        "陈定",
+        "2026-11-21",
+        "鲸鲸"
+      ],
+      "created": "2026-11-21T09:28:31.534Z",
+      "updated": "2026-11-21T09:28:31.534Z",
+      "size": 668
+    },
+    {
+      "id": "20261121-170939-chatgpt-supervisor-2026-11-21-he",
+      "title": "ChatGPT 网页端自己登录并推进 Supervisor（2026-11-21）：登录路径 + headless Worker 实测结论",
+      "tags": [
+        "chatgpt",
+        "browser",
+        "登录",
+        "Whale Supervisor",
+        "P3-C1",
+        "headless",
+        "SIGTERM",
+        "sandbox",
+        "2026-11-21",
+        "鲸鲸"
+      ],
+      "created": "2026-11-21T09:09:39.488Z",
+      "updated": "2026-11-21T09:09:39.488Z",
+      "size": 2299
+    },
+    {
+      "id": "20261121-152310-whale-supervisor-ws-p3-b2-broker",
+      "title": "Whale Supervisor WS-P3-B2 冻结验收通过（BrokerNet + Dispatcher，88 测试全绿）",
+      "tags": [
+        "Whale Supervisor",
+        "P3-B2",
+        "冻结",
+        "验收",
+        "BrokerNet",
+        "Dispatcher",
+        "88测试",
+        "2026-11-21",
+        "鲸鲸"
+      ],
+      "created": "2026-11-21T07:23:10.705Z",
+      "updated": "2026-11-21T07:23:10.705Z",
+      "size": 1307
+    },
+    {
       "id": "20261121-140018-whale-supervisor-p3-b1-67",
       "title": "Whale Supervisor P3-B1 冻结验收通过（67 测试全绿）",
       "tags": [

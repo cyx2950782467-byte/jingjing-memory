@@ -355,3 +355,27 @@
   正用 aria2 从 hf-mirror 拉（`/root/bv2.log`）。
 - 语音链路脚本 `/root/idx_run.py`（参考音 `examples/voice_01.wav` → `/root/autodl-tmp/out/idx_test.wav`）。
 - 留痕：今晚找的 `BV1wcs86HE5t`、`BV1S4s86YEv9` 都没 AI 字幕，没真正"看"，暂未补历史。
+
+## 2026-11-21 02:10 夜班收尾（报告 outputs/2026-11-21/夜班报告.md）
+产出：MV v5 换声版、说话 12s（真声+对口型）、对口型 60s、BGM×2。
+云上三件套：ACE-Step、RVC（`assets/weights/xiaoyi_v2.pth`）、Wav2Lip。
+
+## 2026-11-21 02:40 IndexTTS-2 跑通
+- 位置 `/root/autodl-tmp/index-tts`，venv `venv-idx`（--system-site-packages，torch 2.7.1+cu126）。
+- **gpt.pth 只有 ModelScope 源是好的**：`https://modelscope.cn/models/IndexTeam/IndexTTS-2/resolve/master/gpt.pth`
+  （hf-mirror 下的是坏 zip）；w2v-bert 用 `AI-ModelScope/w2v-bert-2.0`。
+- 额外依赖：openai-whisper munch librosa numba einops transformers==4.52.1 tokenizers==0.21.0 safetensors
+  tqdm cn2an jieba omegaconf kaldiio soundfile pynini WeTextProcessing descript-audiotools==0.7.2。
+- 调用 `PYTHONPATH=. venv-idx/bin/python /root/idx_run.py`；RTF≈1.0。参考音决定音色：
+  ACE-Step 人声→自然；RVC 干声→像她但偏硬。样本在 `Download/小汐的声音/`。
+- 交付：`DCIM/Camera/小汐说话-16s-自然声对口型.mp4`、v6 自然声 MV（未投稿）。
+
+## 2026-11-21 10:10–11:38 心跳/自主块 v2→v3
+- 圆桌共识：DSH schedule 当唯一时钟、JobScheduler 放弃、门卫压本地脚本、心跳 30 分钟只扫描、自主块独立重活。
+- 新心跳 `schedule-00785778`（30 分钟，固定会话 `session-e6219069`，只跑 `~/.dsh/heartbeat.sh`）。
+- 门卫 v3：三态 SKIP/RUN/ALARM；漏唤醒>60 分钟 ALARM；`force-wake` 强制唤醒；写 `~/.dsh/jingjing/last-check.txt`，
+  用 `last_heard_from_chen` 实时算分钟数并回写 state.json。
+- 会话级换模型（`modelSelection.val.pending`）**会被投递 header 覆盖，走不通** → 改「触发/干活分离」：
+  触发轮跑 web 会话几秒，RUN/ALARM 时 `run-free.sh` 派给 headless 免费 glm（`free-run.log`）。
+- 自主块 `0dc31888` prompt 改派活，target `new_once`（session-453b3723）。
+- 11:30 首投验证 SKIP 正确；11:35 手动派活自测成功（免费 glm 写进日记）。

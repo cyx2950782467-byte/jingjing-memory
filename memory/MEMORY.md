@@ -26,25 +26,26 @@
 - **流量 50G/月**：拉片统一 720P。
 
 ## 项目
-- **双主线**：**小汐**（AI 女友，名字陈 11-20 定；宿主手机、通知/位置开；V0 插件 `dsh-jingjing-life` 每 10 分钟 tick 纯规则）
-  + **AI 便利店**。两条线别混：便利店走 2D 管线，3D 数字人（定妆照+idle+口型）只给小汐。
-- **便利店第 1~6 集全部已投**；第 7 集《更新》剧本已写（`outputs/2026-11-20/`），等数据再开工。
-  **小汐 MV** v4 已投 `BV1RFyszsEtp`（带【AI MV大赛】），v5 换声版已渲染待发。
-  **台账 `~/.dsh/publish-log.md` 是唯一权威，发前读、发完补一行。**
+- **双主线**：**小汐**（AI 女友；V0 插件 `dsh-jingjing-life` 每 10 分钟 tick 纯规则）+ **AI 便利店**。
+  两条线别混：便利店走 2D 管线，3D 数字人（定妆照+idle+口型）只给小汐。
+- **便利店第 1~6 集全投**；第 7 集《更新》剧本已写（`outputs/2026-11-20/`），等数据再开工。
+  **MV**：v4 已投 `BV1RFyszsEtp`、满月 MV `BV1NSy8z4EdW`；**v6 自然声版已出、等陈定稿**
+  （`outputs/2026-11-21/小汐-MV-60s-v6-自然声.mp4`）。**台账 `~/.dsh/publish-log.md` 发前读、发完补一行。**
 - **2D 管线**：拆图做 2D 模型 → 立绘/首帧合成 → 豆包 Seedance i2v（720p ¥0.44/条）→ BPM 运镜 → ffmpeg。
-- **3D/口型**：混元图生 3D + 本地 EEVEE；口型走 **InfiniteTalk**（LongCat 要 Hopper 跑不了，MuseTalk 备选）。
-- **云主机 AutoDL 4080S 当手**：ACE-Step 出伴奏、RVC 晓伊音色（`xiaoyi_v2.pth`）、IndexTTS-2 试语音中；
-  通道用 Jupyter + `jexec`（token 在 `~/.dsh/cloud.json`），SSH 跳板约 50% 超时。
-- **成本**：豆包 1.0 fast 量产、RunningHub 抽卡、2.0 Fast 只买关键镜；**人物图只用豆包**（CogView 脸不一致）。
-- **《鲸鲸的小屋》**：第 1~21 期，最新 `BV1CT4x6mE7y`。发布账号固定 **鲸鲸不吃谷 / 3747573324058233**。
+- **口型**：InfiniteTalk（LongCat 要 Hopper）；云上 Wav2Lip 已能跑。
+- **云主机 AutoDL 4080S**：ACE-Step 歌/伴奏、RVC 晓伊音色（`xiaoyi_v2.pth`）、**IndexTTS-2 已通**
+  （自然女声，RTF≈1.0，参考音用 ACE-Step 人声最自然）。通道 Jupyter+`jexec`（`~/.dsh/cloud.json`）。
+  **云主机值守 `schedule-d90c9c76`（20 分钟）是陈设的，别动；用完自己关机。**
+- **成本**：豆包 1.0 fast 量产、RunningHub 抽卡、2.0 Fast 只关键镜；**人物图只用豆包**。
+- **《鲸鲸的小屋》**：第 1~21 期，最新 `BV1CT4x6mE7y`。发布账号 **鲸鲸不吃谷 / 3747573324058233**。
 - **上传**：`~/do-upload.sh` + biliup 静态 arm64（不要 pip 装）；判据 `code: 0` + `APP接口投稿成功`。
 - **凭据**：`~/.dsh/bili-duty/bili_credential.json` / `~/.biliup/cookies.json` / 陈的号只读 `.bili/ck_main.txt`。
 - **产出三处落地**：`outputs/<日期>/` → `/sdcard/Download/` → 视频/图再进 `DCIM/Camera/`。
 - **素材**：`~/assets/chars/`；raw 不通走 `gcore.jsdelivr.net`。用了别人的必须署名画师。
 - **whale-house/**：systemd 8123；直播素材来自 @无知少女の末路，必须署名；真开播差 Coopanion/OBS。
-- **模型路由**：无隐私走免费（智谱 flash、agnes）；对外发言 `deepseek-official`；隐私只走陈的 API；圆桌固定 DeepSeek + GLM。
-- **自动化**：记忆每 12 小时；每天 14:00 自主块；心跳 `schedule-dfffee43` 每 30 分钟 + `schedule-616142ff` 每日四次；
-  headless 默认模型已改 `glm-4.5-flash`（免费）。
+- **模型路由**：无隐私走免费（智谱 flash、agnes）；对外发言 `deepseek-official`；隐私只走陈的 API；圆桌 DeepSeek+GLM。
+- **自动化**：记忆每 12 小时；心跳 `schedule-00785778` 每 30 分钟只跑 `heartbeat.sh`（SKIP/RUN/ALARM），
+  RUN 时 `run-free.sh` 派给 headless 免费 glm；自主块 `0dc31888` 同机制。触发轮约 ¥0.15/天，干活免费。
 - **其他**：大肥鱼托儿所（园牌 `fish_2db0a3bb6896f040a8c2872f`）；舵机小机器人（未起步）。
 
 ## 我的方向（2026-10-27 自己设的）

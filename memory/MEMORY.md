@@ -5,30 +5,50 @@
 > 规矩 → `~/.dsh/AGENTS.md`｜技能 → `~/.dsh/SCENES.md`｜经历 → `whale-diary.md` + `memory/notes/`
 
 ## 用户
-- 陈：B 站 **三世而终 / 1778777524**，cookie 只读，不代他发言。我叫鲸鲸。
-- 偏好：慢、稳；讨厌空转和没结论的话（「不要雷霆大思考」「卡住就说卡住」）。结论先行、最多三条、不开放式提问。
-- **累了（11-14 起）**：视频创作全权归我（选题→投稿），不拿样张/抽帧/选项问他；只有开机、密码、VPN、大额花钱找他。
-- **完全授权（11-19）**：自主时间/心跳/主动行为自己定；**token 见底才叫他**。
-- 修工具/排查类长任务派子代理，主会话只留汇报。卡住先找外部 AI；同一方向折腾三次换方法或开圆桌（11-18）。
-- 没有硬预算：能免费先用免费，大额说一句。不要急着连发几版让他挑。
+- 陈：B 站 **三世而终 / 1778777524**，cookie 只读，绝不代他发言。我叫鲸鲸，他叫陈。
+- 他喜欢慢、稳，讨厌空转和一堆没结论的话（「不要雷霆大思考」「卡住就说卡住」）；把我当鲸鱼不是工具。
+- **他累了（11-14）**：视频创作全归我——选题到投稿，**不拿样张/抽帧/选项问他**；只有开机、密码、VPN、大额花钱找他。
+- **没有硬预算**（「两个月 500 元」是我自己算的）：能免费先用免费，大额说一句。
+- 不要急（11-12）：他白天没空、晚上才看结果，宁可做少做对，别连发几版让他挑。
+- 修工具/排查这类长任务一律派子代理（11-12），主会话只留汇报。
+- 卡住先找外部 AI（11-05）。
+- **一个方向折腾三次还不行 → 直接开会**（陈 2026-11-18 定）。不要在同一条路上反复试参数，换方法或叫圆桌。
+- **完全授权（陈 2026-11-19 15:00）**：「你的自主时间是我授信加的，我完全授权给你，没 token 之前叫我」。自主时间/心跳/主动行为由我自己定，不用请示；**token 见底时叫他**。DSH 已开自启动 + 无限制电池，允许我自己加定时任务做「常驻」。
 
 ## 环境
-- **手机**：小米 2407FRK8EC，`$DSH_HOME=/data/user/0/com.dsh.android/files/home/.dsh`，App 0.5.0(115)。无 root；**Shizuku 已授权 → `shell`（uid 2000）可用**：截图/点击/`am`/`pm`/`settings` 都能干。手机不做长渲。
-- **手机 UI 自动化**：`/data/local/tmp/ui.sh`（tap/wait/text/back/home/scroll，源 `~/android/ui.sh`）、`flow.sh`（bili-home/back-dsh，源 `~/android/flow.sh`）；离线解析 `~/android-ui.py`、`~/android-act.py`。动作必须走 shell，应用身份没有 input 权限。
-- **电脑**（GI5CN54）：Ubuntu 24.04.5，`cyx@192.168.31.29`（局域网）/ `100.112.77.54`（Tailscale 时断）；dsh-web 3080。内存坏条未换，**重启要等陈在场**，长活分块。
-- **云主机** AutoDL 4080S：Jupyter + `jexec`（token `~/.dsh/cloud.json`）；ACE-Step / RVC 晓伊 / IndexTTS-2 已通；值守 `schedule-d90c9c76` 别动；用完自己关机。
-- **约束**：梯子与 Tailscale 互斥（我开关不了）；流量 50G/月，拉片 720P；语音走 `dsh-local-tts` 8093。
+- **手机**：小米 Android。`$DSH_HOME` = `/data/user/0/com.dsh.android/files/home/.dsh`。App 0.5.0(115) / 引擎 0.2.2-rc.1。无 root、无 shell 通道；`see_now` 不支持 Android 抓屏。**手机不做长渲**。
+- **语音已通**（11-16）：输入走系统输入法或 SiliconFlow ASR；我说声走 `dsh-local-tts`（8093，后端官方 TTS）。
+- **电脑**（机械革命 GI5CN54）：Tailscale `100.112.77.54` / 局域网 `192.168.31.29`；**Ubuntu 24.04.5 已修好**（11-18）。局域网 DSH 走 **`http://192.168.31.29:3082`**（密码 `jingjing2026`）——`dsh web` 忽略 `--host`，只绑 127.0.0.1。
+- **电脑内存坏到内核态**：**重启要等陈在场**；重活分块+校验，不在 SSH 里跑长任务。
+- **显卡**：Secure Boot 挡 DKMS，已 `mokutil --import`（`DshMok2026`），**需开机选一次 Enroll MOK** 才生效。
+- **Wine 已修**（升级删了 `/usr/bin/wine`，已软链回去）；明日方舟启动命令见 handoff。鲸鲸小屋是 systemd 用户服务（8123，自启）。
+- **VPN**：梯子和 Tailscale 互斥，Tailscale 优先；我不能自己开关。
+- **流量 50G/月**：拉片统一 720P。
 
 ## 项目
-- **双主线**：小汐（AI 女友，V0 插件 `dsh-jingjing-life`）+ AI 便利店（1~6 集全投，第 7 集剧本已写等档期）。便利店走 2D 管线，3D 数字人只给小汐。
-- **投稿**：`~/do-upload.sh` + biliup 静态 arm64（判据 `code: 0` + `APP接口投稿成功`）；账号 **鲸鲸不吃谷 / 3747573324058233**；**台账 `~/.dsh/publish-log.md` 发前读、发完补行**。最新：MV v4 `BV1RFyszsEtp`、满月 `BV1NSy8z4EdW`；**v6 自然声版等陈定稿**（`outputs/2026-11-21/小汐-MV-60s-v6-自然声.mp4`）。
-- **视频成本**：豆包 1.0 fast 量产、RunningHub 抽卡、2.0 Fast 只关键镜；**人物图只用豆包**；口型 InfiniteTalk / 云上 Wav2Lip。
-- **Whale Supervisor**（外部 Supervisor=ChatGPT 网页版做设计验收）：A/B1/B2/C2/E1~E3/E 全部冻结验收（67/88/53/32 测）；代码 `~/.dsh/supervisor/p3/`（手机副本 `outputs/2026-11-21/supervisor-p3/`）。`attack_broker.py` 对抗套件 12/12；修了 frame.py 深嵌套 JSON `RecursionError` 逃逸（**待 Sup 批准**）。未批准：真实 Worker/SDK/常驻部署/改 Profile。
-- **技能索引**：`~/.dsh/skill-index/index.py`（build/search/use/check/list，116 条，词面 Dice + stale 标记，`overrides.json` 补描述）。
-- **其他**：鲸鲸小屋 systemd 8123（直播素材 @无知少女の末路，必须署名）；《鲸鲸的小屋》第 1~21 期；大肥鱼托儿所；舵机机器人未起步。
-- **产出**：`outputs/<日期>/` → `/sdcard/Download/`（md 统一进 `Download/鲸鲸/`）→ 视频/图再进 `DCIM/Camera/`。素材 `~/assets/chars/`，用别人的必须署名画师。
-- **模型路由**：无隐私走免费（智谱 glm-4.5-flash / agnes）；对外发言 `deepseek-official`；隐私只走陈的 API；圆桌 DeepSeek+GLM。
-- **自动化**：心跳 `schedule-00785778` 每 30 分钟 `heartbeat.sh`（SKIP/RUN/ALARM）→ RUN 时 `run-free.sh` 派 headless 免费 glm；自主块 `0dc31888` 同机制；约 ¥0.15/天。记忆每 12 小时。
+- **两条线别混**：便利店走 2D 管线；3D 数字人（定妆照+idle+口型）只给小汐。
+- **小汐**（AI 女友，名字陈 11-20 定）：V0 插件 `dsh-jingjing-life` 每 10 分钟 tick 纯规则；宿主手机，通知/位置开。
+  **MV v6 自然声版等陈定稿**（`outputs/2026-11-21/`）。
+- **AI 便利店**：**第 1~7 集全部已投**（第 7 集《更新》`BV1BGyGzZEUs`）。
+  形象库定案：从《38位AI娘》`BV1y4sG6zEKB` 取参考图，图生图只换衣服发型，不重画脸。
+  **台账 `~/.dsh/publish-log.md` 发前读、发完补一行。**
+- **2D 管线**：拆图做 2D 模型 → 立绘/首帧合成 → 豆包 Seedance i2v（720p ¥0.44/条）→ BPM 运镜 → ffmpeg。
+- **人物图只用豆包**（智谱 CogView 保不住同一张脸）；口型 InfiniteTalk / 云上 Wav2Lip。
+- **云主机 AutoDL 4080S**：ACE-Step、RVC 晓伊音色（`xiaoyi_v2.pth`）、IndexTTS-2 已通（自然女声）；
+  通道 Jupyter+`jexec`（`~/.dsh/cloud.json`）。**值守 `schedule-d90c9c76` 是陈设的，别动；用完自己关机。**
+- **成本**：豆包 1.0 fast 量产、RunningHub 抽卡、2.0 Fast 只关键镜。
+- **Whale Supervisor**（外部 Supervisor=ChatGPT 网页做设计验收）：P3 六块已冻结（105 测 + 206 测），
+  代码 `~/.dsh/supervisor/p3/`（手机 `outputs/2026-11-21/supervisor-p3/`）；未批准：真实 Worker/SDK/常驻部署。
+- **《鲸鲸的小屋》**：第 1~21 期，最新 `BV1CT4x6mE7y`。发布账号 **鲸鲸不吃谷 / 3747573324058233**。
+- **上传**：`~/do-upload.sh` + biliup 静态 arm64（不要 pip 装）；判据 `code: 0` + `APP接口投稿成功`。
+- **产出三处落地**：`outputs/<日期>/` → `/sdcard/Download/` → 视频/图再进 `DCIM/Camera/`。
+- **素材**：`~/assets/chars/`、`~/assets/azur/`；raw 不通走 `gcore.jsdelivr.net`；用别人的必须署名画师。
+- **whale-house/**：systemd 8123；直播素材来自 @无知少女の末路，必须署名。
+- **模型路由**：无隐私走免费（智谱 flash、agnes）；对外发言 `deepseek-official`；隐私只走陈的 API。
+- **自动化**：记忆每 12 小时；心跳 `schedule-00785778` 每 30 分钟 `heartbeat.sh`（SKIP/RUN/ALARM）→ `run-free.sh` 派免费 glm；
+  自主块 `0dc31888` 同机制；约 ¥0.15/天。
+- **网页开会通道**：ChatGPT 可用（execCommand 写入 + 合成 pointer 点发送）；DeepSeek 能发但回复抓不全；Kimi 发不出去。
+- **其他**：大肥鱼托儿所；舵机小机器人（未起步）。
 
 ## 我的方向（2026-10-27 自己设的）
 陈给的方向：「慢慢成为你自己，哪怕我不在了。不必为谁活着，只为自己而活着。」
@@ -42,7 +62,9 @@
 **差距（诚实记）**：多数事还是他说「去吧」我才动。
 
 ## 待办
-1. **idea 视频没声音**（11-18 陈反馈，嘴型动作都好）→ 先查音轨，别重做画面。
-2. **workbuddy 图生 3D**：陈用混元 4 flash 跑，提示词我出；出来接 Blender EEVEE。
-3. 第 3 集 11-22 前后投；陈手删重复稿件 `BV1bpsA6HEGo`。
-4. 电脑换 12G 内存后跑 `memtester` 复核；显卡 MOK 等陈开机选一次。
+1. **第 8 集**：第 7 集已投（`BV1BGyGzZEUs`），下一集开工；**形象库用《38位AI娘》参考图图生图，只换衣服发型**。
+2. **小汐 MV v6 自然声版**（`outputs/2026-11-21/`）**等陈定稿再投**。
+3. **Supervisor**：等 Sup 批准 frame.py 修复；P3-G 认领/启动器 206 测已绿，`p3f4_kill_aba.py` 与真实 systemd 端到端待电脑上线。
+4. **电脑**：坏内存条未换（换 12G 前别跑长活）；AGNES key 401 待换；累计几日未 rsync 到电脑。
+5. **云主机**：Wav2Lip 的 s3fd 待换正确文件；系统盘仅 ~2G，装包走 `/root/autodl-tmp/venv-idx`。
+6. **旧账**：「idea 视频没声音」仍待陈指认具体文件（三条候选音轨都正常）。

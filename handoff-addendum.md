@@ -434,3 +434,39 @@
 - **下次**：陈回来用 App 点一次（约 1 分钟），或先在 WebView 里登一次 B 站（鲸鲸不吃谷），我就能用网页版换。
 - 另：`~/.dsh/todos/windows.md` 记了成图大赛；**新闻联播版式、MuseTalk 口型两条待办已砍**（陈 2026-11-22）。
 - 电脑 `100.112.77.54` SSH 超时（13:00），Supervisor 的 ABA 实验没跑成，等电脑可达再说。
+
+## 2026-11-22 15:10 第7集 v3 画风混用（陈说放着，等图片）
+- 抽 14 帧看过：**同一部片里两种画风并存**。
+  - 精致二次元大立绘（2K plate）：5s Claude 仰头、32s GLM 鞋尖、37s 屏幕说明、47s Qwen 张嘴。
+  - Q版 chibi（没换）：**10s 镜3 八人看过来、27s 镜6 Gemini 绞手、42s 镜11 八人全景**。
+- 镜6 我改过 plate，重渲后仍是 chibi → 说明 `ep7_frames.py` 的 shot06 改动被覆盖，或走了 `place()` 分支，**下次要单独验这一镜**。
+- **修法**：镜3/6/11 都得换 2K 立绘；镜3 和镜11 是八人同框，**必须先有透明底**（现在 `chars2/*/full.png` 带背景，抠不干净）。
+- **陈决定：放着，等 zipzipzip 的 38 位 AI 娘原图**。图片到位后一次性做：抠透明底 → 替换三镜 → 重渲。
+- 小汐 MV v6 已放相册（`DCIM/Camera/小汐-MV-60s-v6-自然声.mp4`，21MB）。
+
+## 2026-11-22 15:20 电脑又不可达（陈判断可能要换内存）
+- 手机同时有两个网：`10.4.10.15`（移动数据）+ **`192.168.31.229`（家里 WiFi，和电脑同网段）**。
+- 两条路都不通：`ssh cyx@192.168.31.29` → **No route to host**；`ssh cyx@100.112.77.54`（Tailscale）→ Connection timed out；两个地址 `ping` 全失败；`arp -a` 无输出（连邻居表都空）。
+- 手机自己网络正常：`baidu=200`、`hf=000`（没开 VPN，符合）。
+- **陈 2026-11-22 15:20 说：不行就停，可能需要换内存。** 据此停下，不再重试。
+- **待电脑稳定后要做**：`p3f4_kill_aba.py`（InvocationID 防 ABA 实验）+ launcher 端到端（文件在电脑 `~/.dsh/supervisor/p3/`，手机副本 `outputs/2026-11-21/supervisor-p3/` 有 `launcher.py` / `p3f4_kill_aba.py` / `test_launcher.py`）。
+
+## 2026-11-22 21:50 AI 娘形象原作者查清（鲸鲸自己查的）
+- 正确名字是 **ZipZipPipe**（不是 zipzipzip），**UID 4168597**，5.6 万粉，签名「龙娘伟大，伟大龙娘」，年度大会员。
+- 他是这批 AI 娘形象的**原作者**（多个他人二创视频都写「形象来自：@ZipZipPipe」）。
+- **授权是 CC BY-NC-SA 4.0**：可二创，须署名 + 非商业 + 同协议共享。原声明见 BV1DJxF6SERe 简介：「鲸鱼娘形象基于 @上善无形 原创角色二创（b23.tv/Kn7yvnF），依 CC BY-NC-SA 4.0 非商业使用，二创同协议授权，完整声明见主页」。
+- **原图拿不到（三种方式都试过）**：
+  1. `x/space/arc/search` → `HTTP 412`；`x/space/wbi/arc/search` → `-403 权限不足`
+  2. `x/polymer/web-dynamic/v1/feed/space` → `HTTP 412`
+  3. 内置浏览器打开 `space.bilibili.com/4168597`（会跳 m 站）能读到他 40+ 条视频标题，但**主页没有图包/网盘/专栏入口**，只有视频列表。
+- **结论：不需要他的原图也能做**。协议允许二创，我们的路线本来就是「图生图只换衣服发型」，用现有 `chars2/*/portrait.png` + 风格提示词即可；他视频的画面当风格参考就够（480P 抽帧足够看画风，不当参考图用）。
+- **每期必须写**：形象参考 @ZipZipPipe（UID 4168597），授权 CC BY-NC-SA 4.0，非商用；若复刻了具体角色还要写明角色名。
+
+## 2026-11-22 23:10 第7集 v4（ai38 透明立绘版）已起渲
+- **形象库落地**：`~/assets/chars_cc/` 31 张 ZipZipPipe 原图（CC BY-NC-SA 4.0，要双署名）；其中 8 个角色抠成透明底存 `~/assets/chars_ai38/*_cut.png`：claude / gpt / grok / kimi / qwen / glm_fox / feiyu(鲸鱼娘) / gemini。
+- **claude 与 feiyu4k 重抠过**：numpy 全图色距阈值法（thresh 95/100），边缘亮度 223→170、212→168，白边消掉。
+- **Gemini 没有单独立绘**：从 `gemini_series_batch` 合集裁第 1 个角色当参考图，走硅基流动 `Qwen/Qwen-Image-Edit-2509` 图生图生成 456×2288 独立立绘，再抠。
+- **代码改动**：`~/ep7_frames.py` 新增 `CUT38` 常量与 `place_png()`（备份 `ep7_frames.py.bak-preai38`）；shot03（八人看过来）、shot06（Gemini 绞手）、shot11（八人全景）改用 `place_png` 贴透明立绘。
+- **亮度实测**：shot03 64.3/52.5、shot06 61.8/25.4（提亮过一档，原来 35.8）、shot11 73.1/57.4 —— 暗调是有意的。
+- **成片**：`~/.dsh/tmp/rebuild9.log` 在跑，出 `…字幕版-v4-ai38.mp4`，进相册与 Download。**明早先看这个日志有没有 REBUILD9_DONE**。
+- **方向变更（陈 22:20）**：2D 只做小穿插，**主线转 3D 人物**（cxp-character-forge / Tripo 路线，门槛是付费代理 + 电脑装 Blender 5.2）。

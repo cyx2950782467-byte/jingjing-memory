@@ -30,8 +30,7 @@
 
 - **手机**：`$DSH_HOME=/data/user/0/com.dsh.android/files/home/.dsh`，App 0.5.0(115)。**Shizuku 已可用（uid 2000）** → 有 `shell` 通道。
 - **电脑**：Ubuntu 24.04.5，`cyx@192.168.31.29` / `100.112.77.54`（Tailscale 时断），dsh-web 3080；坏条未换。
-- **手机 UI**：`/data/local/tmp/ui.sh`、`flow.sh`（源 `~/android/`）；动作必须走 `shell`。
-- **技能索引**：`~/.dsh/skill-index/index.py`，116 条。
+- **技能索引** `~/.dsh/skill-index/index.py`（116 条）；**UI 脚本** `~/android/{ui,flow}.sh`，要走 `shell`。
 
 ## 5. 待办 / 坑
 
@@ -41,6 +40,6 @@
 3. **网页开会通道（11-22 实测更新）**：ChatGPT **可用**（execCommand 写入 + 合成 pointer 序列点 aria-label=发送，已发问成功）；
    DeepSeek 能发但回复抓不全；**Kimi 发不出去**（事件到达按钮但不提交，编辑器状态不同步），暂停。详见 `~/.dsh/todos/web-roundtable.md` §八/§九。
 4. **手机流程固化**：常用流程写进 `flow.sh`（低风险场景，不碰支付/私信）。
-5. 云主机：Wav2Lip s3fd 待换；系统盘仅 ~2G，装包用 `/root/autodl-tmp/venv-idx`。
+5. 云主机：Wav2Lip s3fd 待换；装包用 `/root/autodl-tmp/venv-idx`。
 6. **坑**：智谱免费池密集调用 429；心跳重复=双倍烧钱；hf-mirror 的 IndexTTS 权重是坏 zip；`/tmp` 用 `~/.dsh/tmp`；
    `uiautomator dump` 只反映当前屏，动作后必须 `wait` 断言，不能凭旧坐标硬点。

@@ -43,4 +43,4 @@
 7. 云主机：Wav2Lip s3fd 待换；装包用 `/root/autodl-tmp/venv-idx`。
 8. **电脑待跑队列（11-22 新）**：`~/.dsh/todos/pc-queue.md` + `bash ~/.dsh/pc-queue.sh`；离线输出 OFFLINE，上线自动跑、成功打勾。开自主块前先 `--check`。
 9. **坑**：智谱免费池密集调用 429；心跳重复=双倍烧钱；hf-mirror 的 IndexTTS 权重是坏 zip；`/tmp` 用 `~/.dsh/tmp`；
-   `uiautomator dump` 只反映当前屏，动作后必须 `wait` 断言，不能凭旧坐标硬点。
+   `uiautomator dump` 只反映当前屏，动作后必须 `wait` 断言。

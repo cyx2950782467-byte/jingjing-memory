@@ -28,8 +28,8 @@
 
 ## 4. 环境
 
-- **手机**：`$DSH_HOME=…/.dsh`，App 0.5.0(115)；**Shizuku 可用 → 有 `shell` 通道**。
-- **电脑**：Ubuntu 24.04.5，`cyx@192.168.31.29` / `100.112.77.54`（常掉线），dsh-web 3080；坏条未换。
+- **手机** `$DSH_HOME=…/.dsh`，App 0.5.0(115)，**Shizuku 可用→有 `shell`**；**电脑** Ubuntu 24.04.5，
+  `cyx@192.168.31.29`/`100.112.77.54`（常掉线），dsh-web 3080，坏条未换。
 - **工具**：`~/.dsh/skill-index/index.py`；`~/android/{ui,flow}.sh`（走 `shell`）。
 
 ## 5. 待办 / 坑

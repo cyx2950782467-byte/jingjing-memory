@@ -23,7 +23,7 @@
 
 ## 3. Supervisor（细节 → `memory/projects/supervisor.md`）
 
-- P3-A/B1/B2/C2/E1~E3/E 全冻结；105 测 + P3-G 206 测绿；对抗 12/12；frame.py 逃逸已修（**待 Sup 批准**）。
+- P3 全冻结；211 测绿；对抗 12/12；frame.py 修复**待 Sup 批准**。
 - 代码 `~/.dsh/supervisor/p3/`（手机 `outputs/2026-11-21/supervisor-p3/`）。**未批准**：真实 Worker/SDK/常驻部署/改 Profile。
 
 ## 4. 环境

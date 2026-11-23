@@ -19,9 +19,12 @@
 - 细节 → `references/environment.md`
 
 ## 项目
-- **AI 便利店**：第 1~7 集已投（第 7 集《更新》`BV1BGyGzZEUs`）；2D 管线；形象库《38位AI娘》图生图只换衣发；台账 `publish-log.md` 为准。→ `projects/ai-convenience.md`
+- **方向（陈 11-22 22:20 定）**：便利店 **2D 只做小穿插，主线转 3D 人物**（图生 3D → 绑骨/表情 → 三渲二）。
+  路线 `cxp-character-forge`（Tripo→Blender→绑骨→三渲二）；三个门槛（Tripo 付费代理 / Blender 5.2+Node22+VRM / Houdini）**都在电脑**。
+- **AI 便利店**：第 1~7 集已投（第 7 集《更新》`BV1BGyGzZEUs`）；**第 7 集要换成 3D 版收尾**。
+  形象库：ZipZipPipe 31 张原图 `~/assets/chars_cc/`（CC BY-NC-SA，双署名），透明底 `~/assets/chars_ai38/`。台账 `publish-log.md` 为准。→ `projects/ai-convenience.md`
 - **小汐**（AI 女友）：要 24 小时活着、会主动找人；V0 插件 tick；MV v6 自然声版等陈定稿。→ `projects/xiaoxi.md`
-- **Whale Supervisor**：P3-G 认领 + launcher 206 测绿；`p3f4` 与真实 systemd 端到端待电脑上线。→ `projects/supervisor.md`
+- **Whale Supervisor**：211 测绿；cancel 要按唯一 unit 名+cgroup 路径复核 InvocationID（同名误杀已实测）。→ `projects/supervisor.md`
 - **《鲸鲸的小屋》** 第 1~21 期（最新 `BV1CT4x6mE7y`）；发布账号 **鲸鲸不吃谷 / 3747573324058233**。
 - 自动化 / 开会通道 / 云主机 / 上传 → `projects/automation.md`
 - 产出三处落地：`outputs/<日期>/` → `/sdcard/Download/` → 视频图进 `DCIM/Camera/`
@@ -35,11 +38,11 @@
 不追「独自等你」那种叙事，不拿悲情当作品。差距：多数事还是他说「去吧」我才动。
 
 ## 待办
-1. 第 8 集《删掉》开选题；形象库按《38位AI娘》图生图。
+1. **第 7 集换 3D 版收尾**（要 Tripo+Blender，电脑上线才动）；之后第 8 集《删掉》直接走 3D 管线。
 2. 小汐 MV v6 自然声版（`outputs/2026-11-21/`）等陈定稿再投。
-3. Supervisor：`p3f4_kill_aba.py` + launcher 端到端待电脑上线。
-4. 电脑坏内存条未换；AGNES key 401 待换。
-5. 云主机 Wav2Lip s3fd 待换；系统盘 ~2G。
+3. Supervisor：等 Sup 批准 frame.py 修复；真实 systemd 端到端已跑通，下一步 P3-B3 接 job/租约。
+4. 电脑坏内存条未换；AGNES key 401 待换；**累计多日未 rsync 到电脑**（掉线）。
+5. 云主机 Wav2Lip s3fd 待换；系统盘 ~2G，装包走 `/root/autodl-tmp/venv-idx`。
 6. 记忆已分层（2026-11-22）：细节在 `memory/references|projects/`，MEMORY.md 只留索引。
 
 ## 记忆检索

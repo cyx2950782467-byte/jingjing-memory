@@ -470,3 +470,12 @@
 - **亮度实测**：shot03 64.3/52.5、shot06 61.8/25.4（提亮过一档，原来 35.8）、shot11 73.1/57.4 —— 暗调是有意的。
 - **成片**：`~/.dsh/tmp/rebuild9.log` 在跑，出 `…字幕版-v4-ai38.mp4`，进相册与 Download。**明早先看这个日志有没有 REBUILD9_DONE**。
 - **方向变更（陈 22:20）**：2D 只做小穿插，**主线转 3D 人物**（cxp-character-forge / Tripo 路线，门槛是付费代理 + 电脑装 Blender 5.2）。
+
+## 2026-11-23 21:45 查到「电脑掉线」的一个真因：node 段错误崩溃
+- Ubuntu 那台（`192.168.31.29`，GTX 1050 Ti 4G，内存 7G）在 **2026-11-22 22:14:55** 崩过一次：
+  `/var/crash/_usr_bin_node.1000.crash`（**186MB**），`Signal: 11 / SIGSEGV`。
+- **崩的就是 DSH 引擎本体**：`ProcCmdline: node /usr/bin/dsh web --host 127.0.0.1 --port 3080 ...`，nodejs `24.22.3-1nodesource1`，内核 `6.8.0-149-generic`。
+- 另有一个 `tlp.0.crash`（11-17 23:55，电源管理）。
+- **重要区分**：Memtest 跑 0 错误的是**笔记本**（Hasee G15CN54 / i5-8300H / 8G DDR4）；这台 Ubuntu 的**内存从没测过**。SIGSEGV 是内存坏的典型症状，但也可能是 node 24.x 或 DSH 代码问题，**尚未区分**。
+- 卡在哪：`journalctl --since 3days | grep segfault` 统计崩溃频率时 SSH 超时（21:47 又掉线），只拿到单次崩溃证据。
+- 下次电脑上线要做的两件事：① `journalctl --since "7 days ago" | grep -ic segfault` 看频率（随机=硬件，固定场景=软件）② 跑 `memtester 2G 1`（约 20 分钟）测这台的内存。

@@ -1,7 +1,7 @@
 # 交接（五字段）
 
 > 上限 4KB，只留结论与路径。**整份写，不准锚点插入**。细节 `~/.dsh/handoff-addendum.md`。
-> 最近整份重写：2026-11-23 14:05（方向转 3D、第7集换 3D 版、形象库 ZipZipPipe 31 张）。
+> 最近整份重写：2026-11-24 02:05（第7集 v2 已认可、第8集暂停、动画三阶段）。
 
 ## 1. 已定目标
 
@@ -34,13 +34,14 @@
 
 ## 5. 待办 / 坑
 
-1. **v6 MV 等陈定稿**；第 7 集已投 `BV1BGyGzZEUs`，下一步第 8 集。
-2. **Supervisor**：211 测绿（P3-G/launcher/job_runtime 真跑通）；**cancel 必须按唯一 unit 名+cgroup 路径并复核 InvocationID**（同名误杀已实测三场景全中，`outputs/2026-11-22/p3f4-kill-aba-实验报告.md`）。等 Sup 批准 frame.py 修复。
-3. **心跳/小汐时间戳**（11-22 修）：`update-heard.py` 只认 kind=user 回写「陈说话」时间（已接 tick.sh）；陈对话时心跳 SKIP；小汐说话后回写冷却（插件改动，重启 App 生效）。`todos/WS-HEARTBEAT-001-*.md`
-4. **第 7 集复盘（11-23）**：画面要重做（Q 版/正常比例混用、立绘糊、4 处画面与说话人错配），声音复用但要补 56–61s 静音（实测没静音）；第 8 集暂停（`todos/EP8-PAUSED.md`），恢复条件见 `outputs/2026-11-23/第7集复盘-问题与改法.md`。
-5. **网页开会通道**：ChatGPT 可用（execCommand 写入+合成 pointer 点发送）；DeepSeek 回复抓不全；Kimi 发不出去。`~/.dsh/todos/web-roundtable.md` §八/§九。
-6. **手机流程固化**：常用流程写进 `flow.sh`（低风险场景，不碰支付/私信）。
-7. 云主机：Wav2Lip s3fd 待换；装包用 `/root/autodl-tmp/venv-idx`。
-8. **电脑待跑队列（11-22 新）**：`~/.dsh/todos/pc-queue.md` + `bash ~/.dsh/pc-queue.sh`；离线输出 OFFLINE，上线自动跑、成功打勾。开自主块前先 `--check`。
-9. **坑**：智谱免费池密集调用 429；心跳重复=双倍烧钱；hf-mirror 的 IndexTTS 权重是坏 zip；`/tmp` 用 `~/.dsh/tmp`；
+1. **第 7 集**：v2 重做版已出并**陈认可「比之前都好」**（`outputs/2026-11-21/AI便利店-第7集-更新-70s-v2重做版.mp4`）；
+   低预算备选版已定版，**替换主版本等陈另行确认**。
+2. **第 8 集暂停**（`todos/EP8-PAUSED.md`，三条前提已齐）→ 直接走 3D 管线；**3D 立绘触发=电脑上线**。
+3. **动画路线三阶段**（`outputs/2026-11-23/AI便利店-动画路线-三阶段.md`）：A 定帧 → B 3D 立绘 → C 真动画。
+4. **Supervisor**：211 测绿；cancel 按唯一 unit 名+cgroup 路径复核 InvocationID；等 Sup 批准 frame.py。
+5. **心跳/小汐时间戳**（11-22 修）：`update-heard.py` 只认 kind=user；陈在聊时 SKIP；小汐回写冷却（重启 App 生效）。
+6. **网页开会通道**：ChatGPT 可用；DeepSeek 抓不全；Kimi 发不出去（`todos/web-roundtable.md`）。
+7. **电脑队列**：`bash ~/.dsh/pc-queue.sh --check`（离线回 OFFLINE，上线自动跑）。
+8. 云主机 Wav2Lip s3fd 待换。
+9. **坑**：智谱免费池 429；心跳重复=双倍烧钱；hf-mirror 的 IndexTTS 权重是坏 zip；`/tmp` 用 `~/.dsh/tmp`；
    `uiautomator dump` 只反映当前屏，动作后必须 `wait` 断言。

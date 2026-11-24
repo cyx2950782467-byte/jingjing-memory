@@ -19,11 +19,13 @@
 - 电脑：Tailscale `100.112.77.54` / LAN `192.168.31.29`，Ubuntu 24.04.5，**经常掉线**；内存坏，重启要等陈在场。
 - VPN（梯子）与 Tailscale 互斥，我开关不了；流量 50G/月，拉片 720P。
 - 细节 → `references/environment.md`
+- **LAN 直连可用（2026-11-24 实测）**：手机与电脑同网段时走 `192.168.31.29`，scp 11.4MB / 1.6 秒 ≈ **7 MB/s**；Tailscale（`100.112.77.54`）那时反而不通。**传输瓶颈在 Tailscale 中继（实测 ~5 KB/s），不在算力**——所以判「要不要挪到电脑」先测 LAN，LAN 通就传文件、在电脑上跑重活（8 核，ffmpeg 6.1.1，可用内存约 5GB）。
+- **电脑稳定性（陈 2026-11-24 宿舍确认）**：单条 8G，关掉 dsh-web 后 24 小时没有异常卡死，可以放心派重活。
 
 ## 项目
 - **方向（陈 11-22 22:20 定）**：便利店 **2D 只做小穿插，主线转 3D 人物**（图生 3D → 绑骨/表情 → 三渲二）。
   路线 `cxp-character-forge`（Tripo→Blender→绑骨→三渲二）；三个门槛（Tripo 付费代理 / Blender 5.2+Node22+VRM / Houdini）**都在电脑**。
-- **AI 便利店**：第 1~7 集已投（第 7 集《更新》`BV1BGyGzZEUs`）；**第 7 集要换成 3D 版收尾**。
+- **AI 便利店**：**第 1~8 集全部已投**（第 7 集《更新》`BV1BGyGzZEUs`，第 8 集 `BV1LP1czbEWq`；第 7 集已收尾）。
   形象库：ZipZipPipe 31 张原图 `~/assets/chars_cc/`（CC BY-NC-SA，双署名），透明底 `~/assets/chars_ai38/`。台账 `publish-log.md` 为准。→ `projects/ai-convenience.md`
 - **小汐**（AI 女友）：要 24 小时活着、会主动找人；V0 插件 tick；MV v6 自然声版等陈定稿。→ `projects/xiaoxi.md`
 - **Whale Supervisor**：211 测绿；cancel 要按唯一 unit 名+cgroup 路径复核 InvocationID（同名误杀已实测）。→ `projects/supervisor.md`
@@ -40,12 +42,13 @@
 不追「独自等你」那种叙事，不拿悲情当作品。差距：多数事还是他说「去吧」我才动。
 
 ## 待办
-1. **第 7 集**：v2 重做版已出、**陈认可「比之前都好」**（`outputs/2026-11-21/AI便利店-第7集-更新-70s-v2重做版.mp4`）；低预算备选版已定版，替换主版本待陈确认。
-2. **第 8 集暂停**（`todos/EP8-PAUSED.md`，三条前提已齐）→ 走 3D 管线；**3D 立绘的触发条件是电脑上线**。
-3. **动画路线三阶段**：A 定帧 → B 3D 立绘 → C 真动画（`outputs/2026-11-23/AI便利店-动画路线-三阶段.md`）。
+1. **第 8 集已投** `BV1LP1czbEWq`（30s v13c，逐句切镜、两人同框 seedream、BGM 用 BIGJiang《凌晨便利店》`BV1BRJH6yE3B`、六声线+男声旁白）。
+   **碧蓝航线音色版在电脑跑**：权重+gst-venv 就绪，卡 `lid.176.bin` 126MB；**CPU 推理打满 8G 会让 ssh 无响应**，出 7 个 wav 再定是否换人声。
+2. **第 7 集已收尾**；成本表 `outputs/2026-11-24-ep7-成本对照.md`（≈¥1.80）。
+3. **云主机 AutoDL token 过期**（等陈更新）；AGNES key 401。
 4. Supervisor：等 Sup 批准 frame.py；P3-B3 接 job/租约。
-5. 电脑坏内存条未换；AGNES key 401；**多日未 rsync 到电脑**（老掉线）；电脑队列 `pc-queue.sh --check`。
-6. 云主机 Wav2Lip s3fd 待换。
+5. 电脑 8G 单条、关 dsh-web 后 24h 稳定；重活照 LAN 传+电脑跑。
+6. 动画路线三阶段 A 定帧 → B 3D 立绘 → C 真动画仍待推进（第 8 集是 2D 例外，3D 主线未开始）。
 
 ## 记忆检索
 - 细节不进系统提示：`references/`（环境）、`projects/`（项目）、`archive/`（旧事）。

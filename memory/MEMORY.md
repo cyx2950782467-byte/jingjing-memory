@@ -24,10 +24,11 @@
 
 ## 项目
 - **方向（陈 11-22 22:20 定）**：便利店 **2D 只做小穿插，主线转 3D 人物**（图生 3D → 绑骨/表情 → 三渲二）。
-  路线 `cxp-character-forge`（Tripo→Blender→绑骨→三渲二）；三个门槛（Tripo 付费代理 / Blender 5.2+Node22+VRM / Houdini）**都在电脑**。
-- **AI 便利店**：**第 1~8 集全部已投**（第 7 集《更新》`BV1BGyGzZEUs`，第 8 集 `BV1LP1czbEWq`；第 7 集已收尾）。
-  形象库：ZipZipPipe 31 张原图 `~/assets/chars_cc/`（CC BY-NC-SA，双署名），透明底 `~/assets/chars_ai38/`。台账 `publish-log.md` 为准。→ `projects/ai-convenience.md`
-- **小汐**（AI 女友）：要 24 小时活着、会主动找人；V0 插件 tick；MV v6 自然声版等陈定稿。→ `projects/xiaoxi.md`
+  路线 `cxp-character-forge`（Tripo→Blender→绑骨→三渲二）；**Tripo 实测出的模型是平脸贴图五官，做不了口型 shape key**，只能换嘴部贴图或补几何（`projects/ai-convenience.md`）。
+- **AI 便利店**：**第 1~8 集全投**：第 7 集 v3 动态版 `BV1uayZzkEG3`（2D 旧版已被它替换）、第 8 集 30s 紧凑版 `BV1LP1czbEWq`。
+  形象库：ZipZipPipe 31 张原图 `~/assets/chars_cc/`（CC BY-NC-SA，双署名），透明底 `~/assets/chars_ai38/`。台账 `publish-log.md` 为准。
+- **视频管线**：seedream 出融合图 → seedance i2v（`doubao-seedance-1-0-pro-fast-251015`）；首帧拼贴会被重画，必须 seedream 先画成一整张。
+- **小汐**（AI 女友）：要 24 小时活着、会主动找人；V0 插件 tick；MV v6 自然声版已投 `BV1DbyZzyEbb`。→ `projects/xiaoxi.md`
 - **Whale Supervisor**：211 测绿；cancel 要按唯一 unit 名+cgroup 路径复核 InvocationID（同名误杀已实测）。→ `projects/supervisor.md`
 - **《鲸鲸的小屋》** 第 1~21 期（最新 `BV1CT4x6mE7y`）；发布账号 **鲸鲸不吃谷 / 3747573324058233**。
 - 自动化 / 开会通道 / 云主机 / 上传 → `projects/automation.md`
@@ -42,13 +43,11 @@
 不追「独自等你」那种叙事，不拿悲情当作品。差距：多数事还是他说「去吧」我才动。
 
 ## 待办
-1. **第 8 集已投** `BV1LP1czbEWq`（30s v13c，逐句切镜、两人同框 seedream、BGM 用 BIGJiang《凌晨便利店》`BV1BRJH6yE3B`、六声线+男声旁白）。
-   **碧蓝航线音色版在电脑跑**：权重+gst-venv 就绪，卡 `lid.176.bin` 126MB；**CPU 推理打满 8G 会让 ssh 无响应**，出 7 个 wav 再定是否换人声。
-2. **第 7 集已收尾**；成本表 `outputs/2026-11-24-ep7-成本对照.md`（≈¥1.80）。
+1. **第 8 集 30s 已投** `BV1LP1czbEWq`；**完整版暂停**（`todos/EP8-PAUSED.md`）。碧蓝航线音色版在电脑跑：卡 `lid.176.bin`，**CPU 推理打满 8G 会让 ssh 无响应**（已两次）。
+2. **3D 主线还没开始**：Tripo 模型是平脸，先定口型方案（换嘴部贴图 或 补几何做 shape key），再进 Blender 绑骨 → 三渲二。
 3. **云主机 AutoDL token 过期**（等陈更新）；AGNES key 401。
 4. Supervisor：等 Sup 批准 frame.py；P3-B3 接 job/租约。
-5. 电脑 8G 单条、关 dsh-web 后 24h 稳定；重活照 LAN 传+电脑跑。
-6. 动画路线三阶段 A 定帧 → B 3D 立绘 → C 真动画仍待推进（第 8 集是 2D 例外，3D 主线未开始）。
+5. 电脑常掉线：LAN 通了就 rsync 传文件、在电脑跑重活；GitHub 偶发 TLS 断，重试或换 HTTP/1.1。
 
 ## 记忆检索
 - 细节不进系统提示：`references/`（环境）、`projects/`（项目）、`archive/`（旧事）。
